@@ -1,0 +1,354 @@
+<title>Cabina Orbital</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: lienzo 3D a pantalla completa; el HUD flota encima como cristal de visor.
+   Aspecto único y oscuro a propósito: es el interior de una nave. */
+:root {
+  --void: #02030a;
+  --ink: #d7e3f4;
+  --ink-dim: #7f8fa8;
+  --scope: #59ffc8;
+  --amber: #ffb454;
+  --glass: rgba(8, 12, 22, 0.55);
+  --line: rgba(215, 227, 244, 0.18);
+  --font-display: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+  --font-data: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--void); color: var(--ink); font-family: var(--font-display); overflow: hidden; }
+.stage { position: relative; height: 100%; }
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+.stage canvas:active { cursor: grabbing; }
+.hud {
+  position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between;
+  padding-block: 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  pointer-events: none;
+}
+.hud-brand h1 { margin: 0; font-size: 1.05rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.hud-brand p { margin: 4px 0 0; font-family: var(--font-data); font-size: 0.72rem; color: var(--amber); }
+.reticle {
+  position: absolute; top: 50%; left: 50%; width: 56px; height: 56px; translate: -50% -50%;
+  color: var(--ink-dim); transition: color 0.25s, scale 0.25s;
+}
+.reticle.is-locked { color: var(--scope); scale: 0.82; }
+.reticle-ring {
+  position: absolute; inset: 0; border: 1px solid currentColor; border-radius: 50%;
+  -webkit-mask: conic-gradient(#000 0 30deg, #0000 0 60deg, #000 0 120deg, #0000 0 150deg, #000 0 210deg, #0000 0 240deg, #000 0 300deg, #0000 0 330deg, #000 0);
+  mask: conic-gradient(#000 0 30deg, #0000 0 60deg, #000 0 120deg, #0000 0 150deg, #000 0 210deg, #0000 0 240deg, #000 0 300deg, #0000 0 330deg, #000 0);
+}
+.reticle-dot { position: absolute; top: 50%; left: 50%; width: 3px; height: 3px; translate: -50% -50%; border-radius: 50%; background: currentColor; }
+.hud-foot { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.readouts {
+  display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 0; padding: 10px 14px;
+  background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(6px);
+}
+.readouts dt { font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); }
+.readouts dd { margin: 2px 0 0; font-family: var(--font-data); font-size: 0.85rem; font-variant-numeric: tabular-nums; white-space: pre; }
+.readouts .wide dd { min-width: 15ch; color: var(--scope); }
+.hint { margin: 0; font-family: var(--font-data); font-size: 0.7rem; color: var(--ink-dim); }
+.fallback { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--ink-dim); }
+</style>
+
+<div class="stage" id="stage">
+  <div class="hud">
+    <header class="hud-brand">
+      <h1>Jukebox Terrestre</h1>
+      <p>Cabina orbital · escáner en espera</p>
+    </header>
+    <div class="reticle" id="reticle" aria-hidden="true"><span class="reticle-ring"></span><span class="reticle-dot"></span></div>
+    <footer class="hud-foot">
+      <dl class="readouts">
+        <div><dt>Azimut</dt><dd id="az">+000.0°</dd></div>
+        <div><dt>Elevación</dt><dd id="el">+000.0°</dd></div>
+        <div><dt>Visor</dt><dd id="zoom">1.0×</dd></div>
+        <div class="wide"><dt>Bajo la mira</dt><dd id="target">—</dd></div>
+      </dl>
+      <p class="hint">Arrastra para mirar · rueda para acercar · flechas o WASD</p>
+    </footer>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// Espejo en Three.js puro de la escena de React Three Fiber del proyecto
+// (earth-jukebox/src). Mismos shaders, misma geometría, mismos controles.
+(function () {
+  const stage = document.getElementById('stage');
+  if (!window.THREE) {
+    stage.insertAdjacentHTML('beforeend', '<p class="fallback">No se pudo cargar Three.js.</p>');
+    return;
+  }
+
+  /* ---------- Shaders ---------- */
+  const earthVertex = `
+    varying vec3 vObj; varying vec3 vNw; varying vec3 vPw;
+    void main() {
+      vObj = normalize(position);
+      vNw = normalize(mat3(modelMatrix) * normal);
+      vec4 w = modelMatrix * vec4(position, 1.0);
+      vPw = w.xyz;
+      gl_Position = projectionMatrix * viewMatrix * w;
+    }`;
+  const noise = `
+    float hash(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+    float noise(vec3 x) {
+      vec3 i = floor(x); vec3 f = fract(x); f = f * f * (3.0 - 2.0 * f);
+      return mix(
+        mix(mix(hash(i), hash(i + vec3(1,0,0)), f.x), mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
+        mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x), mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y),
+        f.z);
+    }
+    float fbm(vec3 p) { float a = 0.5; float s = 0.0; for (int i = 0; i < 5; i++) { s += a * noise(p); p = p * 2.03 + vec3(11.7); a *= 0.5; } return s; }`;
+  const earthFragment = `
+    precision highp float;
+    uniform float uTime; uniform vec3 uSun;
+    varying vec3 vObj; varying vec3 vNw; varying vec3 vPw;
+    ${noise}
+    void main() {
+      vec3 p = vObj;
+      float h = fbm(p * 2.1 + vec3(3.1, 1.7, 5.3)) + 0.08 * (fbm(p * 7.0) - 0.5);
+      float land = smoothstep(0.50, 0.53, h);
+      float lat = abs(p.y);
+      float dry = fbm(p * 4.0 + vec3(20.0));
+      vec3 ocean = mix(vec3(0.01, 0.04, 0.13), vec3(0.03, 0.20, 0.34), smoothstep(0.36, 0.50, h));
+      vec3 ground = mix(vec3(0.06, 0.20, 0.07), vec3(0.42, 0.34, 0.19), smoothstep(0.45, 0.60, dry));
+      ground = mix(ground, vec3(0.30, 0.26, 0.22), smoothstep(0.60, 0.70, h));
+      float ice = smoothstep(0.80, 0.90, lat + (dry - 0.5) * 0.2);
+      vec3 surf = mix(mix(ocean, ground, land), vec3(0.90, 0.94, 1.0), ice);
+      float c1 = fbm(p * 3.2 + vec3(uTime * 0.008, 0.0, uTime * 0.005));
+      float c2 = fbm(p * 9.0 - vec3(uTime * 0.006));
+      float cloud = smoothstep(0.50, 0.70, c1 * 0.7 + c2 * 0.3);
+      float cells = noise(p * 150.0) * noise(p * 34.0 + 5.0);
+      float lights = land * (1.0 - ice) * smoothstep(0.34, 0.6, cells);
+      vec3 N = normalize(vNw); vec3 L = normalize(uSun); vec3 V = normalize(cameraPosition - vPw);
+      float d = dot(N, L);
+      float day = smoothstep(-0.12, 0.22, d);
+      float lit = day * (0.2 + 0.9 * max(d, 0.0));
+      vec3 col = surf * (0.015 + lit);
+      col += vec3(1.0, 0.95, 0.8) * pow(max(dot(N, normalize(L + V)), 0.0), 70.0) * (1.0 - land) * day * 0.6;
+      col = mix(col, vec3(1.0) * (0.02 + lit * 1.05), cloud * 0.88);
+      col += vec3(1.0, 0.72, 0.38) * lights * (1.0 - day) * (1.0 - cloud * 0.8) * 1.2;
+      float fres = pow(1.0 - max(dot(N, V), 0.0), 2.5);
+      col += vec3(0.20, 0.45, 1.0) * fres * (0.08 + day * 0.7);
+      col += vec3(0.90, 0.35, 0.10) * fres * smoothstep(0.35, 0.0, abs(d)) * 0.25;
+      gl_FragColor = vec4(col, 1.0);
+    }`;
+  const atmosphereFragment = `
+    precision highp float;
+    uniform vec3 uSun; varying vec3 vNw; varying vec3 vPw;
+    void main() {
+      vec3 N = normalize(vNw); vec3 V = normalize(cameraPosition - vPw);
+      float rim = clamp(-dot(N, V) / 0.38, 0.0, 1.0);
+      float day = 0.15 + 0.85 * smoothstep(-0.3, 0.3, dot(N, normalize(uSun)));
+      gl_FragColor = vec4(vec3(0.25, 0.55, 1.0) * rim * rim * day * 0.9, 1.0);
+    }`;
+  const scopeVertex = `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+  const scopeFragment = `
+    precision highp float;
+    uniform float uTime; varying vec2 vUv;
+    void main() {
+      vec2 uv = vUv;
+      float grid = step(0.96, fract(uv.x * 10.0)) + step(0.94, fract(uv.y * 5.0));
+      float y = 0.5 + 0.18 * sin(uv.x * 18.0 + uTime * 2.0) * sin(uv.x * 3.0 - uTime * 0.7) + 0.04 * sin(uv.x * 90.0 + uTime * 9.0);
+      float line = smoothstep(0.035, 0.0, abs(uv.y - y));
+      vec3 col = vec3(0.01, 0.04, 0.04) + vec3(0.10, 0.50, 0.45) * grid * 0.15 + vec3(0.35, 1.0, 0.8) * line;
+      gl_FragColor = vec4(col, 1.0);
+    }`;
+
+  /* ---------- Escena ---------- */
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+  } catch (e) {
+    stage.insertAdjacentHTML('beforeend', '<p class="fallback">Este visor no tiene WebGL disponible.</p>');
+    return;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  stage.prepend(renderer.domElement);
+  const canvas = renderer.domElement;
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color('#02030a');
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.05, 1000);
+
+  const EARTH_POSITION = new THREE.Vector3(0, -0.5, -17);
+  const EARTH_RADIUS = 6.5;
+  const SUN = new THREE.Vector3(-1, 0.3, 0.45).normalize();
+
+  scene.add(new THREE.AmbientLight('#2a3c55', 1.5));
+  const cabin = new THREE.PointLight('#ffb454', 0.5, 0, 2);
+  cabin.position.set(0, 1.0, 0.5);
+  scene.add(cabin);
+  const sunLight = new THREE.DirectionalLight('#dfe9ff', 0.55);
+  sunLight.position.copy(SUN).multiplyScalar(50);
+  scene.add(sunLight);
+
+  // Estrellas
+  (function () {
+    const count = 2600, radius = 400;
+    const pos = new Float32Array(count * 3), col = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      const u = Math.random() * 2 - 1, t = Math.random() * Math.PI * 2, s = Math.sqrt(1 - u * u);
+      pos.set([radius * s * Math.cos(t), radius * u, radius * s * Math.sin(t)], i * 3);
+      const b = 0.25 + Math.pow(Math.random(), 3) * 0.75, warm = Math.random();
+      col.set([b * (0.85 + 0.15 * warm), b * 0.9, b * (1.0 - 0.2 * warm)], i * 3);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    scene.add(new THREE.Points(g, new THREE.PointsMaterial({ size: 1.6, sizeAttenuation: false, vertexColors: true })));
+  })();
+
+  // Tierra + atmósfera
+  const earthUniforms = { uTime: { value: 0 }, uSun: { value: SUN.clone() } };
+  const earthGroup = new THREE.Group();
+  earthGroup.position.copy(EARTH_POSITION);
+  earthGroup.rotation.z = THREE.MathUtils.degToRad(23.4);
+  const earth = new THREE.Mesh(
+    new THREE.SphereGeometry(EARTH_RADIUS, 96, 96),
+    new THREE.ShaderMaterial({ vertexShader: earthVertex, fragmentShader: earthFragment, uniforms: earthUniforms })
+  );
+  const atmosphere = new THREE.Mesh(
+    new THREE.SphereGeometry(EARTH_RADIUS, 64, 64),
+    new THREE.ShaderMaterial({
+      vertexShader: earthVertex, fragmentShader: atmosphereFragment, uniforms: earthUniforms,
+      side: THREE.BackSide, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false,
+    })
+  );
+  atmosphere.scale.setScalar(1.08);
+  earthGroup.add(earth, atmosphere);
+  scene.add(earthGroup);
+
+  // Cabina (la cámara está en el origen mirando a -Z; la ventana, en z = -2)
+  const hull = new THREE.MeshStandardMaterial({ color: '#161b26', roughness: 0.7, metalness: 0.4 });
+  const trim = new THREE.MeshStandardMaterial({ color: '#232a38', roughness: 0.55, metalness: 0.6 });
+  const cockpit = new THREE.Group();
+  function panel(parent, size, position, mat, rotZ) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(size[0], size[1], size[2]), mat || hull);
+    m.position.set(position[0], position[1], position[2]);
+    if (rotZ) m.rotation.z = rotZ;
+    parent.add(m);
+    return m;
+  }
+  panel(cockpit, [4, 0.1, 4.2], [0, -1.35, 0]);
+  panel(cockpit, [4, 0.1, 4.2], [0, 1.3, 0]);
+  panel(cockpit, [4, 2.7, 0.1], [0, 0, 2.05]);
+  [-1, 1].forEach(function (s) {
+    panel(cockpit, [0.1, 2.7, 2.65], [s * 2, 0, 0.75]);
+    panel(cockpit, [0.1, 0.6, 1.5], [s * 2, -1.05, -1.3]);
+    panel(cockpit, [0.2, 2.5, 0.2], [s * 1.95, 0.1, -2], trim);
+    panel(cockpit, [0.1, 2.0, 0.1], [s * 1.25, 0.2, -2], trim, -s * 0.12);
+  });
+  panel(cockpit, [4, 0.2, 0.2], [0, 1.2, -2], trim);
+  panel(cockpit, [4, 0.6, 0.1], [0, -1.05, -2]);
+
+  const consoleGroup = new THREE.Group();
+  consoleGroup.position.set(0, -1.15, -1.45);
+  consoleGroup.rotation.x = 0.5;
+  panel(consoleGroup, [3.9, 0.5, 1.0], [0, 0, 0], trim);
+  const scopeUniforms = { uTime: { value: 0 } };
+  const scope = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.9, 0.42),
+    new THREE.ShaderMaterial({ vertexShader: scopeVertex, fragmentShader: scopeFragment, uniforms: scopeUniforms })
+  );
+  scope.position.set(0, 0.26, 0);
+  scope.rotation.x = -Math.PI / 2;
+  consoleGroup.add(scope);
+  const lampColors = ['#ffb454', '#59ffc8', '#ffb454', '#ff5d5d', '#59ffc8'];
+  [-1, 1].forEach(function (side) {
+    for (let r = 0; r < 2; r++) for (let c = 0; c < 5; c++) {
+      panel(consoleGroup, [0.05, 0.015, 0.05], [side * (0.75 + c * 0.17), 0.26, -0.15 + r * 0.22],
+        new THREE.MeshBasicMaterial({ color: lampColors[(c + r * 2) % lampColors.length] }));
+    }
+  });
+  cockpit.add(consoleGroup);
+  panel(cockpit, [1.4, 0.03, 0.02], [0, 0.6, 1.99], new THREE.MeshBasicMaterial({ color: '#ffb454' }));
+  scene.add(cockpit);
+
+  /* ---------- Controles de mirada ---------- */
+  const YAW_LIMIT = 2.0, PITCH_LIMIT = 0.9, FOV_MIN = 22, FOV_MAX = 70;
+  const st = { yaw: 0, pitch: 0, tYaw: 0, tPitch: 0, tFov: 55, drag: false, x: 0, y: 0, keys: {} };
+  canvas.addEventListener('pointerdown', function (e) {
+    st.drag = true; st.x = e.clientX; st.y = e.clientY;
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  canvas.addEventListener('pointermove', function (e) {
+    if (!st.drag) return;
+    const k = 0.0032 * (camera.fov / 55);
+    st.tYaw += (e.clientX - st.x) * k; st.tPitch += (e.clientY - st.y) * k;
+    st.x = e.clientX; st.y = e.clientY;
+  });
+  const release = function () { st.drag = false; };
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', release);
+  canvas.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    st.tFov = THREE.MathUtils.clamp(st.tFov + e.deltaY * 0.03, FOV_MIN, FOV_MAX);
+  }, { passive: false });
+  const onKey = function (e) { st.keys[e.code] = e.type === 'keydown'; };
+  window.addEventListener('keydown', onKey);
+  window.addEventListener('keyup', onKey);
+
+  /* ---------- HUD ---------- */
+  const $ = function (id) { return document.getElementById(id); };
+  const hud = { az: $('az'), el: $('el'), zoom: $('zoom'), target: $('target'), reticle: $('reticle') };
+  const signed = function (v) { return (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1).padStart(5, '0') + '°'; };
+  const sphere = new THREE.Sphere(EARTH_POSITION, EARTH_RADIUS);
+  const ray = new THREE.Ray();
+  const hit = new THREE.Vector3();
+
+  function resize() {
+    const w = stage.clientWidth || 1, h = stage.clientHeight || 1;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(stage);
+  window.addEventListener('resize', resize);
+  resize();
+
+  const clock = new THREE.Clock();
+  function frame() {
+    const dt = Math.min(clock.getDelta(), 0.1);
+    const k = st.keys;
+    st.tYaw += ((k.ArrowLeft || k.KeyA ? 1 : 0) - (k.ArrowRight || k.KeyD ? 1 : 0)) * 1.2 * dt;
+    st.tPitch += ((k.ArrowUp || k.KeyW ? 1 : 0) - (k.ArrowDown || k.KeyS ? 1 : 0)) * 1.2 * dt;
+    st.tYaw = THREE.MathUtils.clamp(st.tYaw, -YAW_LIMIT, YAW_LIMIT);
+    st.tPitch = THREE.MathUtils.clamp(st.tPitch, -PITCH_LIMIT, PITCH_LIMIT);
+    const ease = 1 - Math.exp(-dt * 10);
+    st.yaw += (st.tYaw - st.yaw) * ease;
+    st.pitch += (st.tPitch - st.pitch) * ease;
+    camera.rotation.set(st.pitch, st.yaw, 0, 'YXZ');
+    if (Math.abs(camera.fov - st.tFov) > 0.01) { camera.fov += (st.tFov - camera.fov) * ease; camera.updateProjectionMatrix(); }
+
+    earth.rotation.y += dt * 0.02;
+    earthUniforms.uTime.value += dt;
+    scopeUniforms.uTime.value += dt;
+
+    renderer.render(scene, camera);
+
+    hud.az.textContent = signed(THREE.MathUtils.radToDeg(-st.yaw));
+    hud.el.textContent = signed(THREE.MathUtils.radToDeg(st.pitch));
+    hud.zoom.textContent = (55 / camera.fov).toFixed(1) + '×';
+    ray.origin.copy(camera.position);
+    camera.getWorldDirection(ray.direction);
+    const onEarth = Boolean(ray.intersectSphere(sphere, hit));
+    hud.reticle.classList.toggle('is-locked', onEarth);
+    if (onEarth) {
+      earth.worldToLocal(hit);
+      const lat = THREE.MathUtils.radToDeg(Math.asin(hit.y / EARTH_RADIUS));
+      let lon = THREE.MathUtils.radToDeg(Math.atan2(hit.z, -hit.x)) - 180;
+      if (lon < -180) lon += 360;
+      hud.target.textContent = Math.abs(lat).toFixed(1) + '°' + (lat >= 0 ? 'N' : 'S') + '  ' + Math.abs(lon).toFixed(1) + '°' + (lon >= 0 ? 'E' : 'O');
+    } else {
+      hud.target.textContent = 'Espacio profundo';
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>

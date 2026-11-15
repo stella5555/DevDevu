@@ -1,0 +1,589 @@
+<meta charset="utf-8">
+<title>Cabina Jukebox Terrestre</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  /* Layout: lienzo 3D a pantalla completa. Encima, un HUD mínimo: retícula al centro,
+     aviso bajo la retícula, contador arriba y lista de señales abajo. Un solo mundo oscuro. */
+  :root {
+    color-scheme: dark;
+    --void: #020308;
+    --fg: #e9dfc9;
+    --dim: #8b93a1;
+    --amber: #f0a63c;
+    --signal: #7be0a4;
+    --alert: #ef7b6a;
+    --gold: #ffd36a;
+    --panel: rgba(8, 11, 16, 0.82);
+    --line: #2b3648;
+    --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body {
+    background: var(--void); color: var(--fg); font-family: var(--font-mono); font-size: 14px; overflow: hidden;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  #view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+  #view:focus-visible { outline: 2px solid var(--signal); outline-offset: -4px; }
+
+  .hud { position: fixed; pointer-events: none; text-transform: uppercase; letter-spacing: 0.12em; font-size: 12px;
+         text-shadow: 0 0 6px #000, 0 0 2px #000; }
+  #counter { top: calc(14px + env(safe-area-inset-top, 0px)); left: max(16px, env(safe-area-inset-left, 0px)); color: var(--dim); }
+  #counter b { color: var(--signal); font-weight: 500; }
+  #help { top: calc(14px + env(safe-area-inset-top, 0px)); right: max(16px, env(safe-area-inset-right, 0px));
+          color: var(--dim); text-align: right; max-width: min(46ch, 60vw); line-height: 1.6; }
+
+  /* Retícula */
+  #cross { left: 50%; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; border: 1px solid rgba(233, 223, 201, 0.55);
+           border-radius: 50%; transition: transform 0.15s, border-color 0.15s; }
+  #cross::after { content: ""; position: absolute; left: 50%; top: 50%; width: 3px; height: 3px; margin: -1.5px; border-radius: 50%; background: var(--fg); }
+  #cross.hot { border-color: var(--amber); transform: scale(1.7); box-shadow: 0 0 14px rgba(240, 166, 60, 0.6); }
+  #cross.done { border-color: var(--signal); transform: scale(1.7); }
+  #cross.locked { border-color: var(--alert); transform: scale(1.3); }
+  #cross.gold { border-color: var(--gold); transform: scale(2.2); box-shadow: 0 0 18px rgba(255, 211, 106, 0.7); }
+  #prompt { left: 50%; top: calc(50% + 34px); transform: translateX(-50%); text-align: center; width: min(90vw, 60ch);
+            color: var(--fg); line-height: 1.6; min-height: 3.2em; }
+  #prompt small { display: block; color: var(--dim); font-size: 11px; }
+  #toast { left: 50%; bottom: calc(92px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(90vw, 64ch);
+           text-align: center; color: var(--amber); letter-spacing: 0.08em; text-transform: none; font-size: 14px; line-height: 1.5;
+           transition: opacity 0.6s; }
+
+  /* Lista de señales: la misma acción de escaneo, con teclado, lector de pantalla o pantalla táctil */
+  #signals { position: fixed; left: 0; right: 0; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; flex-wrap: wrap;
+             gap: 8px; justify-content: center; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); }
+  #signals button, .term-head button {
+    appearance: none; font: inherit; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
+    color: var(--fg); background: var(--panel); border: 1px solid var(--line); padding: 7px 11px; }
+  #signals button:hover, .term-head button:hover { border-color: var(--amber); color: var(--amber); }
+  #signals button.done { color: var(--signal); }
+  #signals button.open { color: var(--amber); border-color: var(--amber); }
+  #signals button[aria-disabled="true"] { color: var(--dim); opacity: 0.6; cursor: not-allowed; }
+  #signals button.gold { color: var(--gold); border-color: var(--gold); box-shadow: 0 0 14px rgba(255, 211, 106, 0.35); }
+  button:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+
+  #flash { position: fixed; inset: 0; background: #cfe9ff; opacity: 0; pointer-events: none; }
+
+  /* Terminal superpuesta con la Jukebox */
+  #terminal { position: fixed; inset: 0; background: rgba(2, 3, 8, 0.72); display: flex; flex-direction: column;
+              padding: calc(12px + env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px))
+                       calc(12px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+              animation: boot 0.5s ease-out; }
+  @keyframes boot { from { opacity: 0; transform: scale(1.04); } }
+  .term-head { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between;
+               border: 1px solid var(--amber); border-bottom: 0; background: #080b10; padding: 8px 12px;
+               font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); }
+  #terminal iframe { flex: 1; min-height: 0; width: 100%; border: 1px solid var(--amber); background: #080b10; }
+  #fail { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--alert); }
+  @media (prefers-reduced-motion: reduce) { #terminal { animation: none; } #cross { transition: none; } }
+</style>
+
+<canvas id="view" tabindex="0" aria-label="Cabina de la nave en primera persona. Usa las flechas para mirar y Enter para escanear lo que apunta la retícula. La lista de señales al pie hace lo mismo sin apuntar."></canvas>
+
+<div id="counter" class="hud">Señales descifradas <b id="count">0/5</b></div>
+<div id="help" class="hud">Clic para tomar el control · mueve el ratón para mirar<br>Clic sobre una anomalía para escanearla · Esc suelta el ratón</div>
+<div id="cross" class="hud" aria-hidden="true"></div>
+<div id="prompt" class="hud" role="status"></div>
+<div id="toast" class="hud" role="status" style="opacity:0"></div>
+<nav id="signals" aria-label="Señales detectadas"></nav>
+<div id="flash"></div>
+
+<div id="terminal" hidden>
+  <div class="term-head">
+    <span id="term-title">Terminal · Jukebox Terrestre</span>
+    <button id="term-close" type="button">Volver a la cabina</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  /* ───────────── 0. Datos y estado ───────────── */
+  const JUKEBOX_URL = "jukebox-terrestre.html";          // debe estar en la misma carpeta que este archivo
+  // u, v: posición de la anomalía sobre la cara visible de la Tierra (izquierda→derecha, abajo→arriba)
+  const MISSIONS = [
+    { id: "tiros1",   year: 1960, name: "TIROS-1",   u: -0.52, v:  0.14 },
+    { id: "landsat1", year: 1972, name: "Landsat 1", u: -0.24, v: -0.24 },
+    { id: "nimbus7",  year: 1978, name: "Nimbus-7",  u:  0.04, v:  0.22 },
+    { id: "terra",    year: 1999, name: "Terra",     u:  0.30, v: -0.12 },
+    { id: "dscovr",   year: 2015, name: "DSCOVR",    u:  0.56, v:  0.20 }
+  ];
+  const TOTAL = MISSIONS.length;
+  const store = {                                        // mismo almacén que usa la Jukebox; puede fallar sin romper nada
+    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  };
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const $ = (id) => document.getElementById(id);
+  const reducedMotion = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let done = clamp(Number(store.get("jukebox.done", 0)) || 0, 0, TOTAL);   // misiones descifradas, en orden
+  let mode = "cabin";                                    // cabin | zoom | terminal | return
+  let yaw = 0, pitch = 0.14;                             // hacia dónde mira el jugador
+  let aim = null;                                        // lo que hay bajo la retícula
+  let doorGlow = 0;                                      // 0 apagada → 1 dorada
+
+  if (!window.THREE) { fail("No se pudo cargar Three.js. Revisa la conexión y recarga la página."); return; }
+
+  /* ───────────── 1. Escena base ───────────── */
+  const canvas = $("view");
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); }
+  catch (e) { fail("Este navegador no pudo iniciar WebGL, así que la cabina 3D no se puede mostrar."); return; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x020308);
+  const EYE = new THREE.Vector3(0, 1.6, -0.9);             // posición del jugador en la cabina
+  const camera = new THREE.PerspectiveCamera(70, 1, 0.05, 2500);
+  camera.position.copy(EYE);
+  camera.rotation.order = "YXZ";
+
+  /* ───────────── 2. Texturas procedimentales ───────────── */
+  function canvasTex(w, h, draw) {
+    const c = document.createElement("canvas"); c.width = w; c.height = h;
+    draw(c.getContext("2d"), w, h);
+    return new THREE.CanvasTexture(c);
+  }
+  const woodTex = canvasTex(256, 256, (g, w, h) => {     // tablones oscuros con veta
+    g.fillStyle = "#3a2a1c"; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 900; i++) {
+      g.strokeStyle = "rgba(" + (Math.random() < 0.5 ? "0,0,0" : "120,90,60") + "," + (0.05 + Math.random() * 0.12) + ")";
+      const y = Math.random() * h, x = Math.random() * w;
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + 20 + Math.random() * 90, y + (Math.random() - 0.5) * 3); g.stroke();
+    }
+    g.fillStyle = "rgba(0,0,0,0.55)";
+    for (let y = 0; y < h; y += 42) g.fillRect(0, y, w, 3);
+    for (let y = 0; y < h; y += 42) { g.fillRect(((y * 7) % w), y, 3, 42); }
+  });
+  woodTex.wrapS = woodTex.wrapT = THREE.RepeatWrapping; woodTex.repeat.set(3, 2);
+
+  const glowTex = canvasTex(128, 128, (g, w) => {        // halo de las anomalías
+    const r = g.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2);
+    r.addColorStop(0, "rgba(255,255,255,1)"); r.addColorStop(0.25, "rgba(255,255,255,0.45)"); r.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = r; g.fillRect(0, 0, w, w);
+  });
+
+  // Ruido 3D para dibujar continentes sin costura en el meridiano
+  function hash3(x, y, z) { const s = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453; return s - Math.floor(s); }
+  function vnoise(x, y, z) {
+    const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+    let fx = x - xi, fy = y - yi, fz = z - zi;
+    fx = fx * fx * (3 - 2 * fx); fy = fy * fy * (3 - 2 * fy); fz = fz * fz * (3 - 2 * fz);
+    const L = (a, b, t) => a + (b - a) * t;
+    return L(L(L(hash3(xi, yi, zi), hash3(xi + 1, yi, zi), fx), L(hash3(xi, yi + 1, zi), hash3(xi + 1, yi + 1, zi), fx), fy),
+             L(L(hash3(xi, yi, zi + 1), hash3(xi + 1, yi, zi + 1), fx), L(hash3(xi, yi + 1, zi + 1), hash3(xi + 1, yi + 1, zi + 1), fx), fy), fz);
+  }
+  function fbm3(x, y, z) { let a = 0.5, f = 1, s = 0; for (let o = 0; o < 4; o++) { s += a * vnoise(x * f, y * f, z * f); a *= 0.5; f *= 2; } return s / 0.9375; }
+
+  const earthTex = canvasTex(768, 384, (g, w, h) => {    // Tierra oscura de alto contraste: costas brillantes, luces aisladas
+    const img = g.createImageData(w, h), d = img.data;
+    for (let py = 0; py < h; py++) for (let px = 0; px < w; px++) {
+      const lon = (px / w) * Math.PI * 2, lat = (0.5 - py / h) * Math.PI;
+      const x = Math.cos(lat) * Math.cos(lon), y = Math.sin(lat), z = Math.cos(lat) * Math.sin(lon);
+      const n = fbm3(x * 2.1 + 5, y * 2.1 + 5, z * 2.1 + 5), e = n - 0.5;
+      let r = 3, gg = 8, b = 18;                         // océano
+      if (e > 0) { const t = Math.min(1, e * 6); r = 10 + 14 * t; gg = 40 + 26 * t; b = 48 + 16 * t; }   // tierra
+      if (Math.abs(e) < 0.01) { r = 70; gg = 210; b = 205; }                                              // costa
+      else if (e > 0.02 && hash3(px, py, 7) > 0.9965) { r = 255; gg = 190; b = 90; }                       // luces
+      const i = (py * w + px) * 4; d[i] = r; d[i + 1] = gg; d[i + 2] = b; d[i + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+  });
+
+  /* ───────────── 3. El planeta objetivo ───────────── */
+  const EARTH_R = 60, EARTH_C = new THREE.Vector3(0, 20, -130);
+  const earth = new THREE.Group(); earth.position.copy(EARTH_C); scene.add(earth);
+  const globe = new THREE.Mesh(
+    new THREE.SphereGeometry(EARTH_R, 64, 48),
+    new THREE.ShaderMaterial({
+      uniforms: { map: { value: earthTex }, uLight: { value: new THREE.Vector3(-0.62, 0.48, 0.6).normalize() } },
+      vertexShader: "varying vec2 vUv; varying vec3 vN; varying vec3 vV; void main(){ vUv = uv; vec4 wp = modelMatrix * vec4(position, 1.0);" +
+                    " vN = normalize(mat3(modelMatrix) * normal); vV = normalize(cameraPosition - wp.xyz); gl_Position = projectionMatrix * viewMatrix * wp; }",
+      fragmentShader: "uniform sampler2D map; uniform vec3 uLight; varying vec2 vUv; varying vec3 vN; varying vec3 vV;" +
+                      " void main(){ vec3 c = texture2D(map, vUv).rgb; float d = max(dot(vN, uLight), 0.0); float f = pow(1.0 - max(dot(vN, vV), 0.0), 3.0);" +
+                      " gl_FragColor = vec4(c * (0.3 + 1.5 * d) + vec3(0.10, 0.45, 0.62) * f * (0.25 + d), 1.0); }"
+    }));
+  earth.add(globe);
+  const wire = new THREE.Mesh(                           // malla de meridianos y paralelos, apenas visible
+    new THREE.SphereGeometry(EARTH_R + 0.4, 36, 18),
+    new THREE.MeshBasicMaterial({ color: 0x2a8f8a, wireframe: true, transparent: true, opacity: 0.16 }));
+  earth.add(wire);
+  earth.add(new THREE.Mesh(                              // halo de atmósfera
+    new THREE.SphereGeometry(EARTH_R * 1.07, 48, 32),
+    new THREE.ShaderMaterial({
+      side: THREE.BackSide, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
+      vertexShader: "varying vec3 vN; void main(){ vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+      fragmentShader: "varying vec3 vN; void main(){ float i = pow(max(0.0, 0.72 - dot(vN, vec3(0.0, 0.0, 1.0))), 3.0); gl_FragColor = vec4(0.25, 0.6, 0.9, 1.0) * i; }"
+    })));
+
+  { // estrellas
+    const n = 1600, pos = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
+      const v = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize().multiplyScalar(1200);
+      pos.set([v.x, v.y, v.z], i * 3);
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    scene.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0xc6d4ff, size: 1.5, sizeAttenuation: false, transparent: true, opacity: 0.85 })));
+  }
+
+  /* ───────────── 4. Anomalías sobre la Tierra ───────────── */
+  const targets = [];                                    // todo lo que la retícula puede tocar (o que le tapa la vista)
+  const ghost = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });   // zona de impacto invisible
+  const toEye = EYE.clone().sub(EARTH_C).normalize();
+  const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), toEye).normalize();
+  const up = new THREE.Vector3().crossVectors(toEye, right).normalize();
+  const nodes = MISSIONS.map((m, i) => {
+    const dir = toEye.clone().addScaledVector(right, m.u).addScaledVector(up, m.v).normalize();
+    const pos = EARTH_C.clone().addScaledVector(dir, EARTH_R + 1.2);
+    const core = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 10), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+    const hit = new THREE.Mesh(new THREE.SphereGeometry(3.4, 10, 8), ghost);
+    hit.userData = { kind: "node", i };
+    const group = new THREE.Group(); group.position.copy(pos); group.add(core, halo, hit);
+    scene.add(group); targets.push(hit);
+    return { m, pos, core, halo };
+  });
+  const nodeState = (i) => (i < done ? "done" : i === done ? "open" : "locked");
+  const STATE_COLOR = { done: 0x7be0a4, open: 0xf0a63c, locked: 0x6a4f4f };
+
+  /* ───────────── 5. La cabina ───────────── */
+  const wood = new THREE.MeshStandardMaterial({ map: woodTex, color: 0x9a8672, roughness: 0.92, metalness: 0.0 });
+  const metal = new THREE.MeshStandardMaterial({ color: 0x2c323b, roughness: 0.55, metalness: 0.65 });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x14171c, roughness: 0.8, metalness: 0.3 });
+  function box(w, h, d, mat, x, y, z, parent) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); (parent || scene).add(m); return m;
+  }
+  const blocker = (mesh) => { mesh.userData = { kind: "wall" }; targets.push(mesh); return mesh; };
+
+  // casco: suelo, techo, costados, fondo
+  box(6.4, 0.2, 7.7, wood, 0, -0.1, 0.75);
+  box(6.4, 0.2, 7.7, wood, 0, 3.7, 0.75);
+  blocker(box(0.2, 3.6, 7.7, wood, -3.1, 1.8, 0.75));
+  blocker(box(0.2, 3.6, 7.7, wood, 3.1, 1.8, 0.75));
+  blocker(box(6.4, 3.6, 0.2, wood, 0, 1.8, 4.5));
+  // pared frontal con el gran ventanal (hueco de 4,6 × 2,2 m)
+  blocker(box(6.4, 0.9, 0.2, wood, 0, 0.45, -3));
+  blocker(box(6.4, 0.5, 0.2, wood, 0, 3.35, -3));
+  blocker(box(0.8, 2.2, 0.2, wood, -2.7, 2.0, -3));
+  blocker(box(0.8, 2.2, 0.2, wood, 2.7, 2.0, -3));
+  // marco y montantes de metal
+  box(4.8, 0.12, 0.3, metal, 0, 0.92, -2.95); box(4.8, 0.12, 0.3, metal, 0, 3.08, -2.95);
+  box(0.12, 2.2, 0.3, metal, -2.32, 2.0, -2.95); box(0.12, 2.2, 0.3, metal, 2.32, 2.0, -2.95);
+  blocker(box(0.09, 2.2, 0.14, metal, -1.45, 2.0, -2.95)); blocker(box(0.09, 2.2, 0.14, metal, 1.45, 2.0, -2.95));
+  // costillas del casco y tuberías
+  [-1.6, 0.2, 2.0, 3.8].forEach((z) => {
+    box(0.14, 3.6, 0.16, metal, -2.95, 1.8, z); box(0.14, 3.6, 0.16, metal, 2.95, 1.8, z); box(6.0, 0.14, 0.16, metal, 0, 3.55, z);
+  });
+  [-2.2, 2.4].forEach((x) => {
+    const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 7.2, 10), metal);
+    pipe.rotation.x = Math.PI / 2; pipe.position.set(x, 3.4, 0.8); scene.add(pipe);
+  });
+
+  // consola bajo el ventanal
+  blocker(box(4.7, 0.9, 0.9, wood, 0, 0.45, -2.45));
+  const panel = blocker(box(4.5, 0.08, 0.72, dark, 0, 1.0, -2.3)); panel.rotation.x = 0.5;
+  const blinkers = [];
+  for (let i = 0; i < 16; i++) {
+    const col = [0xf0a63c, 0x7be0a4, 0xef7b6a, 0x7be0a4][i % 4];
+    const b = box(0.07, 0.03, 0.07, new THREE.MeshBasicMaterial({ color: col }), 0, 0, 0, panel);
+    b.position.set(-0.3 + (i % 8) * 0.3 + (i > 7 ? 0.1 : 0), 0.055, -0.18 + Math.floor(i / 8) * 0.3);
+    blinkers.push({ mat: b.material, base: new THREE.Color(col), phase: Math.random() * 10, speed: 0.4 + Math.random() * 2.2 });
+  }
+  // pantalla de la consola: muestra el progreso dentro del propio mundo
+  const screenCanvas = document.createElement("canvas"); screenCanvas.width = 256; screenCanvas.height = 160;
+  const screenTex = new THREE.CanvasTexture(screenCanvas);
+  const crt = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.56), new THREE.MeshBasicMaterial({ map: screenTex }));
+  crt.position.set(-1.62, 1.32, -2.55); crt.rotation.set(-0.18, 0.42, 0); scene.add(crt);
+  box(1.0, 0.66, 0.1, metal, 0, 0, -0.06, crt);
+  function drawScreen() {
+    const g = screenCanvas.getContext("2d");
+    g.fillStyle = "#04130c"; g.fillRect(0, 0, 256, 160);
+    g.fillStyle = "#7be0a4"; g.font = "600 20px 'IBM Plex Mono', Consolas, monospace";
+    g.fillText("SEÑALES", 16, 34);
+    g.font = "600 56px 'IBM Plex Mono', Consolas, monospace"; g.fillText(done + "/" + TOTAL, 16, 96);
+    for (let i = 0; i < TOTAL; i++) { g.fillStyle = i < done ? "#7be0a4" : i === done ? "#f0a63c" : "#1d3a2b"; g.fillRect(16 + i * 46, 118, 38, 20); }
+    screenTex.needsUpdate = true;
+  }
+
+  // luces: un farol ámbar, el brillo verde de la consola y la luz fría de la Tierra
+  scene.add(new THREE.AmbientLight(0x1c2434, 0.75));
+  const lantern = new THREE.PointLight(0xffa040, 1.1, 10, 2); lantern.position.set(1.7, 2.9, -0.6); scene.add(lantern);
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffc070 }));
+  bulb.position.copy(lantern.position); scene.add(bulb);
+  box(0.02, 0.7, 0.02, metal, 1.7, 3.28, -0.6);
+  const consoleGlow = new THREE.PointLight(0x46ffa6, 0.4, 4.5, 2); consoleGlow.position.set(0, 1.35, -2.0); scene.add(consoleGlow);
+  const earthshine = new THREE.DirectionalLight(0x4a6fb0, 0.35); earthshine.position.set(0, 4, -10); scene.add(earthshine);
+
+  /* ───────────── 6. La Puerta del Valhalla (escotilla del fondo) ─────────────
+     Apagada y sellada hasta que `done` llega a TOTAL. Entonces setProgress() la enciende en dorado
+     y enterMuseum() queda como punto de entrada al Museo de los Descubrimientos. */
+  const hatch = new THREE.Group(); hatch.position.set(0, 1.7, 4.36); hatch.rotation.y = Math.PI; hatch.scale.setScalar(0.88); scene.add(hatch);
+  const GOLD = new THREE.Color(0xffc24a);
+  const ringMat = new THREE.MeshStandardMaterial({ color: 0x343a44, roughness: 0.5, metalness: 0.7, emissive: 0x000000 });
+  hatch.add(new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.15, 14, 56), ringMat));
+  const doorMat = new THREE.MeshStandardMaterial({ color: 0x1b1f25, roughness: 0.7, metalness: 0.5, emissive: 0x000000 });
+  const leaf = new THREE.Mesh(new THREE.CylinderGeometry(1.42, 1.42, 0.12, 56), doorMat); leaf.rotation.x = Math.PI / 2; hatch.add(leaf);
+  [Math.PI / 4, -Math.PI / 4].forEach((a) => { const beam = box(2.7, 0.16, 0.1, ringMat, 0, 0, 0.1, hatch); beam.rotation.z = a; });
+  const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.05, 10, 32), ringMat); wheel.position.z = 0.24; hatch.add(wheel);
+  for (let i = 0; i < 3; i++) { const spoke = box(0.8, 0.05, 0.05, ringMat, 0, 0, 0.24, hatch); spoke.rotation.z = (i * Math.PI) / 3; }
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2, bolt = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), ringMat);
+    bolt.position.set(Math.cos(a) * 1.5, Math.sin(a) * 1.5, 0.15); hatch.add(bolt);
+  }
+  const seam = new THREE.Mesh(new THREE.RingGeometry(1.37, 1.46, 64),                                // rendija por la que escapa la luz
+    new THREE.MeshBasicMaterial({ color: 0xffd36a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+  seam.position.z = 0.09; hatch.add(seam);
+  const signMat = new THREE.MeshBasicMaterial({
+    transparent: true, color: 0x4a4234,
+    map: canvasTex(512, 64, (g) => {
+      g.fillStyle = "#fff"; g.font = "600 30px 'IBM Plex Mono', Consolas, monospace"; g.textAlign = "center"; g.textBaseline = "middle";
+      g.fillText("MUSEO DE LOS DESCUBRIMIENTOS", 256, 34);
+    })
+  });
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 0.375), signMat); sign.position.set(0, 1.89, 0.02); hatch.add(sign);
+  const lampMat = new THREE.MeshBasicMaterial({ color: 0x5a1512 });
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), lampMat); lamp.position.set(-1.95, 0.2, 0.05); hatch.add(lamp);
+  const doorLight = new THREE.PointLight(0xffc24a, 0, 9, 2); doorLight.position.set(0, 1.9, 3.5); scene.add(doorLight);
+  const hatchHit = new THREE.Mesh(new THREE.SphereGeometry(1.45, 12, 10), ghost);
+  hatchHit.position.set(0, 1.7, 4.3); hatchHit.userData = { kind: "door" }; scene.add(hatchHit); targets.push(hatchHit);
+
+  const doorOpen = () => done >= TOTAL;
+  function enterMuseum() {
+    // PUNTO DE ENTRADA: aquí irá la transición al Museo de los Descubrimientos.
+    toast("La escotilla cede con un zumbido dorado. El Museo de los Descubrimientos aún se está construyendo al otro lado.");
+  }
+
+  /* ───────────── 7. HUD ───────────── */
+  let toastTimer = 0;
+  function toast(text, ms) {
+    const t = $("toast"); t.textContent = text; t.style.opacity = 1;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.style.opacity = 0; }, ms || 5200);
+  }
+  function fail(text) { const d = document.createElement("div"); d.id = "fail"; d.textContent = text; document.body.appendChild(d); }
+
+  function describeAim(a) {
+    if (!a) return { cls: "", html: "" };
+    if (a.kind === "door") {
+      return doorOpen()
+        ? { cls: "gold", html: "Escotilla abierta · Museo de los Descubrimientos<small>clic para entrar</small>" }
+        : { cls: "locked", html: "Escotilla sellada<small>descifra las " + TOTAL + " señales para abrirla · llevas " + done + "</small>" };
+    }
+    const m = MISSIONS[a.i], st = nodeState(a.i);
+    if (st === "locked") return { cls: "locked", html: "Señal sin identificar<small>demasiado débil · descifra antes la de " + MISSIONS[done].year + "</small>" };
+    return { cls: st === "done" ? "done" : "hot", html: "Anomalía " + m.year + " · " + m.name + "<small>" + (st === "done" ? "ya descifrada · clic para volver a escanear" : "clic para escanear") + "</small>" };
+  }
+  function showAim() {
+    const d = mode === "cabin" ? describeAim(aim) : { cls: "", html: "" };
+    $("cross").className = "hud " + d.cls; $("prompt").innerHTML = d.html;
+  }
+
+  function buildSignals() {
+    const nav = $("signals"); nav.textContent = "";
+    MISSIONS.forEach((m, i) => {
+      const st = nodeState(i), b = document.createElement("button");
+      b.type = "button"; b.className = st; b.id = "sig-" + m.id;
+      b.textContent = st === "locked" ? m.year + " · bloqueada" : m.year + " · " + m.name;
+      b.setAttribute("aria-label", st === "locked" ? m.year + ", señal bloqueada" : "Escanear " + m.year + ", " + m.name + (st === "done" ? ", ya descifrada" : ""));
+      if (st === "locked") b.setAttribute("aria-disabled", "true");
+      b.addEventListener("click", () => activate({ kind: "node", i }));
+      nav.appendChild(b);
+    });
+    const d = document.createElement("button");
+    d.type = "button"; d.id = "sig-door"; d.className = doorOpen() ? "gold" : "";
+    d.textContent = doorOpen() ? "Escotilla · abierta" : "Escotilla · sellada";
+    if (!doorOpen()) d.setAttribute("aria-disabled", "true");
+    d.addEventListener("click", () => activate({ kind: "door" }));
+    nav.appendChild(d);
+  }
+
+  // Punto único por el que entra el progreso (desde la Jukebox o al cargar).
+  function setProgress(n, announce) {
+    const wasOpen = doorOpen();
+    done = clamp(Number(n) || 0, 0, TOTAL);
+    store.set("jukebox.done", done);
+    $("count").textContent = done + "/" + TOTAL;
+    nodes.forEach((nd, i) => { const c = STATE_COLOR[nodeState(i)]; nd.core.material.color.setHex(c); nd.halo.material.color.setHex(c); });
+    drawScreen(); buildSignals(); showAim();
+    if (announce && doorOpen() && !wasOpen) pendingToast = "Algo se ha encendido a tu espalda. Date la vuelta.";
+  }
+  let pendingToast = "";
+
+  /* ───────────── 8. Escaneo: zoom cinemático y terminal ───────────── */
+  let anim = null, frame = null, audioCtx = null;
+  const lookQuat = (from, to) => { const o = new THREE.Object3D(); o.position.copy(from); o.lookAt(to); o.rotateY(Math.PI); return o.quaternion.clone(); };
+  const viewQuat = () => new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch, yaw, 0, "YXZ"));
+
+  function scanSound() {                                 // barrido ascendente corto; el clic del jugador autoriza el audio
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const t = audioCtx.currentTime, o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = "sine"; o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(1500, t + 1.4);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.07, t + 0.3); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
+      o.connect(g); g.connect(audioCtx.destination); o.start(t); o.stop(t + 1.6);
+    } catch (e) {}
+  }
+
+  function activate(a) {
+    if (mode !== "cabin" || !a) return;
+    if (a.kind === "door") {
+      if (doorOpen()) enterMuseum();
+      else toast("La escotilla no se mueve. Algo al otro lado espera a que descifres las " + TOTAL + " señales. Llevas " + done + ".");
+      return;
+    }
+    if (a.kind !== "node") return;
+    if (nodeState(a.i) === "locked") { toast("La señal es demasiado débil para escanearla. Descifra antes la de " + MISSIONS[done].year + "."); return; }
+    startScan(a.i);
+  }
+
+  function startScan(i) {
+    mode = "zoom"; showAim();
+    if (document.pointerLockElement) document.exitPointerLock();
+    scanSound();
+    const node = nodes[i].pos, from = camera.position.clone();
+    const to = node.clone().addScaledVector(from.clone().sub(node).normalize(), 13);    // se detiene justo delante de la anomalía
+    anim = { t: 0, dur: reducedMotion ? 0.01 : 1.5, from, to, q0: camera.quaternion.clone(), q1: lookQuat(from, node), fov0: 70, fov1: 40,
+             end: () => openTerminal(i) };
+  }
+
+  function openTerminal(i) {
+    mode = "terminal";
+    const m = MISSIONS[i], term = $("terminal");
+    frame = document.createElement("iframe");
+    frame.title = "Jukebox Terrestre, misión " + m.name;
+    frame.allow = "autoplay";
+    frame.src = JUKEBOX_URL + "#" + m.id;                 // la Jukebox abre directamente esa misión
+    term.appendChild(frame);
+    $("term-title").textContent = "Terminal · anomalía " + m.year + " · " + m.name;
+    term.hidden = false; $("flash").style.opacity = 0;
+    $("term-close").focus();
+  }
+
+  function closeTerminal() {
+    if (mode !== "terminal") return;
+    if (frame) { frame.remove(); frame = null; }          // quitar el iframe también corta su sonido
+    $("terminal").hidden = true;
+    mode = "return";
+    anim = { t: 0, dur: reducedMotion ? 0.01 : 0.9, from: camera.position.clone(), to: EYE.clone(), q0: camera.quaternion.clone(), q1: viewQuat(),
+             fov0: camera.fov, fov1: 70, end: () => {
+               mode = "cabin"; canvas.focus();
+               if (pendingToast) { toast(pendingToast, 7000); pendingToast = ""; }
+             } };
+  }
+  $("term-close").addEventListener("click", closeTerminal);
+
+  // La Jukebox avisa de su progreso con postMessage; solo se acepta del iframe que abrimos.
+  window.addEventListener("message", (e) => {
+    if (!frame || e.source !== frame.contentWindow || !e.data || e.data.type !== "jukebox:progress") return;
+    setProgress(e.data.done, true);
+  });
+
+  /* ───────────── 9. Controles ───────────── */
+  let drag = null; const keys = {};
+  const look = (dx, dy) => { yaw += dx; pitch = clamp(pitch + dy, -1.1, 1.1); };
+  canvas.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, y: e.clientY, moved: 0 }; });
+  window.addEventListener("pointermove", (e) => {
+    if (mode !== "cabin") return;
+    if (document.pointerLockElement === canvas) look(-e.movementX * 0.0022, -e.movementY * 0.0022);   // ratón capturado: mirada libre
+    else if (drag) {                                                                                  // sin captura: arrastrar para mirar
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      drag.x = e.clientX; drag.y = e.clientY; drag.moved += Math.abs(dx) + Math.abs(dy);
+      look(dx * 0.004, dy * 0.004);
+    }
+  });
+  window.addEventListener("pointerup", (e) => {
+    const wasClick = drag && drag.moved < 6; drag = null;
+    if (!wasClick || mode !== "cabin" || e.target !== canvas) return;
+    if (aim && aim.kind !== "wall") activate(aim);
+    else if (e.pointerType === "mouse" && document.pointerLockElement !== canvas && canvas.requestPointerLock) {
+      try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (err) {}   // opcional: si falla, se arrastra
+    }
+  });
+  canvas.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (aim && aim.kind !== "wall") activate(aim); }
+    if (e.key.startsWith("Arrow")) { keys[e.key] = true; e.preventDefault(); }
+  });
+  window.addEventListener("keyup", (e) => { keys[e.key] = false; });
+  window.addEventListener("keydown", (e) => { if (e.key === "Escape") closeTerminal(); });
+
+  function resize() {
+    const w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+  window.addEventListener("resize", resize); resize();
+
+  /* ───────────── 10. Bucle ───────────── */
+  const ray = new THREE.Raycaster(), center = new THREE.Vector2(0, 0);
+  const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  let time = 0;
+
+  function update(dt) {
+    time += dt;
+    globe.rotation.y += dt * 0.012; wire.rotation.y += dt * 0.012;
+
+    if (mode === "cabin") {
+      const k = 1.4 * dt;
+      if (keys.ArrowLeft) look(k, 0); if (keys.ArrowRight) look(-k, 0); if (keys.ArrowUp) look(0, k); if (keys.ArrowDown) look(0, -k);
+      camera.rotation.set(pitch, yaw, 0); camera.updateMatrixWorld();
+      ray.setFromCamera(center, camera);
+      const hit = ray.intersectObjects(targets, false)[0];
+      const next = hit ? hit.object.userData : null;
+      if ((next && next.kind) !== (aim && aim.kind) || (next && next.i) !== (aim && aim.i)) { aim = next; showAim(); }
+    } else if (anim) {
+      anim.t = Math.min(1, anim.t + dt / anim.dur);
+      const e = ease(anim.t);
+      camera.position.lerpVectors(anim.from, anim.to, e);
+      camera.quaternion.copy(anim.q0).slerp(anim.q1, Math.min(1, e * 3));
+      camera.fov = anim.fov0 + (anim.fov1 - anim.fov0) * e; camera.updateProjectionMatrix();
+      if (mode === "zoom") $("flash").style.opacity = clamp((anim.t - 0.72) / 0.28, 0, 1) * 0.85;
+      if (anim.t >= 1) { const end = anim.end; anim = null; end(); }
+    }
+
+    // anomalías: laten las disponibles, las bloqueadas apenas se ven
+    nodes.forEach((nd, i) => {
+      const st = nodeState(i), pulse = 0.5 + 0.5 * Math.sin(time * 2.4 + i);
+      const s = st === "open" ? 6 + 2.6 * pulse : st === "done" ? 5 : 2.4;
+      nd.halo.scale.set(s, s, 1); nd.halo.material.opacity = st === "locked" ? 0.5 : 1;
+      nd.core.scale.setScalar(st === "locked" ? 0.6 : 1);
+    });
+
+    // cabina viva: farol que titila y pilotos de la consola
+    lantern.intensity = 1.05 + 0.07 * Math.sin(time * 13) + 0.05 * Math.sin(time * 7.3);
+    blinkers.forEach((b) => b.mat.color.copy(b.base).multiplyScalar(0.35 + 0.65 * (Math.sin(time * b.speed + b.phase) > 0 ? 1 : 0.25)));
+
+    // escotilla: se enciende poco a poco cuando el archivo está completo
+    doorGlow += ((doorOpen() ? 1 : 0) - doorGlow) * Math.min(1, dt * 1.2);
+    const breath = 0.8 + 0.2 * Math.sin(time * 1.7);
+    ringMat.emissive.copy(GOLD).multiplyScalar(0.9 * doorGlow * breath);
+    doorMat.emissive.copy(GOLD).multiplyScalar(0.12 * doorGlow);
+    seam.material.opacity = doorGlow * breath;
+    doorLight.intensity = 2.2 * doorGlow * breath;
+    signMat.color.setHex(0x4a4234).lerp(GOLD, doorGlow);
+    lampMat.color.setHex(0x5a1512).lerp(GOLD, doorGlow);
+  }
+
+  let lastT = 0;
+  function loop(ms) {
+    requestAnimationFrame(loop);
+    const dt = Math.min(0.05, (ms - lastT) / 1000 || 0); lastT = ms;
+    if (mode === "terminal") return;                     // con la terminal abierta la escena queda congelada detrás
+    update(dt); renderer.render(scene, camera);
+  }
+
+  setProgress(done, false);
+  camera.rotation.set(pitch, yaw, 0);
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawScreen);
+
+  // Ganchos para depurar desde la consola: jukeboxWorld.setProgress(5) enciende la escotilla.
+  window.jukeboxWorld = {
+    setProgress: (n) => setProgress(n, true), scan: (i) => activate({ kind: "node", i }), close: closeTerminal,
+    look: (y, p) => { yaw = y; pitch = p; }, step: (dt) => { update(dt); renderer.render(scene, camera); },
+    state: () => ({ mode, done, aim, yaw, pitch, doorGlow })
+  };
+})();
+</script>

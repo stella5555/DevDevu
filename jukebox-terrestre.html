@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Jukebox Terrestre</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Major+Mono+Display&display=swap">
@@ -296,7 +297,10 @@
     const last = MISSIONS.length - 1;
     // `done` = cuántas misiones se han descifrado, en orden. La misión i está desbloqueada si i <= done.
     const [done, setDone] = useState(() => clamp(Number(store.get("jukebox.done", 0)) || 0, 0, MISSIONS.length));
-    const [idx, setIdx] = useState(() => Math.min(done, last));
+    const [idx, setIdx] = useState(() => {               // la cabina 3D abre una misión concreta con #id
+      const asked = MISSIONS.findIndex((ms) => "#" + ms.id === location.hash);
+      return asked >= 0 && asked <= done ? asked : Math.min(done, last);
+    });
     const [phase, setPhase] = useState("idle");          // idle | loading | playing | done
     const [step, setStep] = useState(-1);
     const [pct, setPct] = useState(0);
@@ -311,7 +315,11 @@
     const run = useRef({ id: 0, timer: 0, nodes: [] });
 
     const m = MISSIONS[idx];
-    useEffect(() => store.set("jukebox.done", done), [done]);
+    useEffect(() => {
+      store.set("jukebox.done", done);
+      // Si la Jukebox corre dentro de la cabina 3D (iframe), le avisa del progreso para encender la escotilla.
+      if (window.parent !== window) window.parent.postMessage({ type: "jukebox:progress", done }, "*");
+    }, [done]);
     useEffect(() => store.set("jukebox.a11y", a11y), [a11y]);
 
     useEffect(() => {                                    // carga la imagen, la dibuja y lee sus píxeles

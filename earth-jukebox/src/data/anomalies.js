@@ -1,0 +1,208 @@
+// Catálogo de anomalías: los 10 recursos oficiales del reto, todos del
+// Scientific Visualization Studio (SVS) de la NASA. Título, año, fuente y
+// resumen están verificados contra cada página https://svs.gsfc.nasa.gov/<id>/
+// (noviembre de 2026).
+//
+// lat/lon es dónde se esconde la señal sobre el globo: una elección de diseño
+// inspirada en lo que muestra cada visualización, no un dato del SVS.
+// `region` es ese mismo lugar dicho en llano: lo usa ARIA al dar una pista.
+// `signal` es la voz del onduloscopio (ver src/audio/voices.js): cada misión
+// tiene una frecuencia base única y una textura propia de su categoría.
+// La estación de análisis del Pilar 2 lee su configuración de datasets.js.
+
+const svs = (id) => `https://svs.gsfc.nasa.gov/${id}/`;
+
+export const CATEGORIES = {
+  referencia: { label: 'Señal de referencia', color: '#f1e9d2' },
+  luces: { label: 'Luces nocturnas', color: '#ffd166' },
+  oceano: { label: 'Océano', color: '#4cc9f0' },
+  atmosfera: { label: 'Atmósfera', color: '#c8a2ff' },
+  carbono: { label: 'Carbono', color: '#ff7a59' },
+  agua: { label: 'Vapor de agua', color: '#7aa8ff' },
+  bosque: { label: 'Biosfera', color: '#7be495' },
+  electricidad: { label: 'Electricidad atmosférica', color: '#ff7ad9' },
+};
+
+export const ANOMALIES = [
+  {
+    id: 'caldwell-73',
+    svsId: 13786,
+    url: svs(13786),
+    title: 'Sonificación de datos: Caldwell 73',
+    short: 'Caldwell 73',
+    year: 2020,
+    source: 'Telescopio espacial Hubble',
+    category: 'referencia',
+    // No es un dato terrestre: se ancla en Goddard, sede del SVS.
+    lat: 39.0, lon: -76.9,
+    place: 'NASA Goddard (Maryland), sede del SVS',
+    region: 'la costa este de Norteamérica',
+    summary:
+      'Un barrido recorre la imagen del cúmulo globular Caldwell 73 (NGC 1851), a unos 40 000 años luz: cuanto más lejos del centro está una estrella, más agudo suena. No es un dato terrestre, sino la referencia de cómo se convierte un dato en sonido.',
+    signal: { kind: 'tone', hz: 440 },
+    signature: 'Señal de calibración: tono puro (La 440 Hz)',
+    tracks: { distancia: 'altura del tono' },
+  },
+  {
+    id: 'night-lights',
+    svsId: 5313,
+    url: svs(5313),
+    title: 'Cambios en las luces nocturnas entre 2012 y 2023',
+    short: 'Luces nocturnas',
+    year: 2024,
+    source: 'Black Marble · sensor VIIRS (Suomi NPP)',
+    category: 'luces',
+    lat: 28.6, lon: 77.2,
+    place: 'Llanura indogangética (India)',
+    region: 'el norte de la India',
+    summary:
+      'Promedios anuales de luz nocturna de 2012 a 2023: en morado donde la luz aumentó y en naranja donde disminuyó, con acercamientos a India, Ucrania, Europa occidental y el Mediterráneo oriental.',
+    signal: { kind: 'chime', hz: 660, seed: 5313 },
+    signature: 'Destellos agudos, como ciudades que se encienden',
+    tracks: { brillo: 'ritmo / volumen' },
+  },
+  {
+    id: 'sea-currents',
+    svsId: 3912,
+    url: svs(3912),
+    title: 'Corrientes superficiales del océano y temperatura',
+    short: 'Corrientes y temperatura',
+    year: 2012,
+    source: 'Modelo ECCO2 (MIT / JPL)',
+    category: 'oceano',
+    lat: -38.0, lon: 22.0,
+    place: 'Corriente de Agulhas',
+    region: 'el extremo sur de África, mar adentro',
+    summary:
+      'Los flujos de las corrientes superficiales, coloreados según la temperatura del mar en cada punto, entre marzo de 2007 y marzo de 2008.',
+    signal: { kind: 'swell', hz: 110, rate: 0.19 },
+    signature: 'Ondas fluidas y graves, un oleaje lento',
+    tracks: { rojo: 'bajo (temperatura)', azul: 'pad (océano)' },
+  },
+  {
+    id: 'perpetual-ocean-2',
+    svsId: 5425,
+    url: svs(5425),
+    title: 'Perpetual Ocean 2: corrientes de frontera occidental',
+    short: 'Perpetual Ocean 2',
+    year: 2025,
+    source: 'Modelo ECCO2 (NASA / JPL)',
+    category: 'oceano',
+    lat: 35.0, lon: 142.0,
+    place: 'Corriente de Kuroshio',
+    region: 'el Pacífico, frente a Japón',
+    summary:
+      'Partículas virtuales arrastradas por el campo de velocidad 3D del océano dibujan las corrientes de frontera occidental: Kuroshio, Agulhas y la corriente del Golfo.',
+    signal: { kind: 'swell', hz: 146.83, rate: 0.33, drift: 35 },
+    signature: 'Ondas fluidas con remolinos: el tono deriva',
+    tracks: { contraste: 'escala musical' },
+  },
+  {
+    id: 'aerosols',
+    svsId: 5669,
+    url: svs(5669),
+    title: 'Aerosoles GEOS (2025)',
+    short: 'Aerosoles GEOS',
+    year: 2026,
+    source: 'Modelo GEOS-FP (GMAO)',
+    category: 'atmosfera',
+    lat: 18.0, lon: -25.0,
+    place: 'Pluma de polvo del Sahara sobre el Atlántico',
+    region: 'el Atlántico, frente a la costa del Sahara',
+    summary:
+      'Sal marina, polvo, humo y sulfatos modelados para el 19 de agosto de 2025: polvo sahariano cruzando el Atlántico, sulfatos volcánicos del Kilauea y el Etna, y humo de incendios.',
+    signal: { kind: 'breath', hz: 880, rate: 0.23 },
+    signature: 'Silbido de viento: ruido filtrado que respira',
+    tracks: { porTipo: 'un instrumento por capa de aerosol' },
+  },
+  {
+    id: 'air-quality',
+    svsId: 5533,
+    url: svs(5533),
+    title: 'Simulaciones del modelo de calidad del aire',
+    short: 'Calidad del aire',
+    year: 2025,
+    source: 'Modelo GEOS-CF (GMAO)',
+    category: 'atmosfera',
+    lat: 52.9, lon: -118.1,
+    place: 'Oeste de Norteamérica, temporada de incendios 2024',
+    region: 'el oeste de Canadá',
+    summary:
+      'Monóxido de carbono, partículas finas (PM2.5), ozono y óxidos de nitrógeno moviéndose por la atmósfera en julio y agosto de 2024, una temporada de incendios muy activa en Norteamérica.',
+    signal: { kind: 'drone', hz: 98, rate: 0.11 },
+    signature: 'Zumbido denso y disonante, aire cargado',
+    tracks: { paleta: 'timbre', densidad: 'dinámica' },
+  },
+  {
+    id: 'co2',
+    svsId: 5196,
+    url: svs(5196),
+    title: 'DYAMOND: dióxido de carbono global',
+    short: 'CO₂ global',
+    year: 2024,
+    source: 'Simulación DYAMOND (GEOS + MITgcm)',
+    category: 'carbono',
+    lat: 19.5, lon: -155.6,
+    place: 'Mauna Loa (Hawái)',
+    region: 'Hawái, en mitad del Pacífico',
+    summary:
+      'Concentraciones simuladas de CO₂ de enero a marzo de 2020: los penachos de centrales eléctricas, incendios y ciudades se reparten con el viento por continentes y océanos.',
+    signal: { kind: 'chord', hz: 73.42, rate: 0.13 },
+    signature: 'Acorde denso que evoluciona: cada nota respira a su ritmo',
+    tracks: { concentracion: 'síntesis continua' },
+  },
+  {
+    id: 'atmospheric-river',
+    svsId: 4960,
+    url: svs(4960),
+    title: 'Vista 3D de un río atmosférico',
+    short: 'Río atmosférico',
+    year: 2022,
+    source: 'Reanálisis MERRA-2 (GMAO)',
+    category: 'agua',
+    lat: 32.0, lon: -140.0,
+    place: 'Pacífico nororiental',
+    region: 'el Pacífico, entre Hawái y California',
+    summary:
+      'Vapor de agua en tres dimensiones: humedad tropical de la zona de convergencia intertropical que se une a otras fuentes y forma un río atmosférico rumbo a la costa oeste de Estados Unidos.',
+    signal: { kind: 'flow', hz: 196, period: 6 },
+    signature: 'Corriente ascendente sin fin: el tono siempre sube',
+    tracks: { humedad: 'paisaje sonoro envolvente' },
+  },
+  {
+    id: 'gedi-forest',
+    svsId: 4950,
+    url: svs(4950),
+    title: 'GEDI: altura del bosque',
+    short: 'Bosques GEDI',
+    year: 2021,
+    source: 'Lidar GEDI (Estación Espacial Internacional)',
+    category: 'bosque',
+    lat: -3.0, lon: -60.0,
+    place: 'Amazonia',
+    region: 'la Amazonia',
+    summary:
+      'Altura global del dosel forestal medida con lidar: la vegetación baja en marrón y verde oscuro, la más alta en verde brillante y blanco.',
+    signal: { kind: 'steps', hz: 261.63, scale: [0, 3, 7, 10, 14, 10, 7, 3], step: 0.18, decay: 0.11 },
+    signature: 'Notas escalonadas que suben y bajan como el dosel',
+    tracks: { altura: 'tono', densidad: 'ritmo' },
+  },
+  {
+    id: 'lightning',
+    svsId: 5011,
+    url: svs(5011),
+    title: 'Rayos detectados desde la Estación Espacial (2017–2023)',
+    short: 'Rayos desde la ISS',
+    year: 2023,
+    source: 'Sensor LIS (Estación Espacial Internacional)',
+    category: 'electricidad',
+    lat: -1.5, lon: 24.0,
+    place: 'Cuenca del Congo, máxima actividad eléctrica del planeta',
+    region: 'la cuenca del Congo, en África central',
+    summary:
+      'Cada rayo que el sensor LIS registró desde la Estación Espacial entre enero de 2017 y julio de 2023, mostrado con una ventana móvil de 10 días: los trópicos de África, América y el sudeste asiático concentran las descargas.',
+    signal: { kind: 'pulses', hz: 523.25, pattern: 'X..x.X...xX.....', step: 0.085, decay: 0.03, spark: 0.5 },
+    signature: 'Chasquidos eléctricos a ráfagas irregulares',
+    tracks: { destellos: 'percusión' },
+  },
+];
