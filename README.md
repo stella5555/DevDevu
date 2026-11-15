@@ -7,7 +7,7 @@ En el año 2042, una anomalía climática ha desestabilizado la línea temporal 
 
 Combinamos la ingeniería inversa de mecánicas de exploración espacial (inspiradas en *Outer Wilds*) con procesamiento de datos en tiempo real de la NASA, transformando visualizaciones científicas complejas en una experiencia gamificada, accesible y musical.
 
-## 🎯 Público Objetivo
+## Público Objetivo
 Diseñado para estudiantes, educadores y entusiastas del clima (12+ años). Transforma el aprendizaje de datos satelitales densos en un misterio interactivo, ideal para quienes aprenden mejor a través del sonido, la exploración visual y la gamificación.
 
 ## 📡 Recursos Oficiales de la NASA (SVS y EIC)
@@ -27,6 +27,6 @@ Integramos **10 conjuntos de datos oficiales** del *Scientific Visualization Stu
 
 ## 👥 El Equipo
 * **Hilary Cruz** - Arquitectura, Diseño de Experiencia (UX) y Dirección Narrativa.
-* **Niels [y otros compañeros]** - [Sus roles, ej. Análisis de Datos, Modelado 3D].
+* **Niels** - Dirección Narrativa.
 
 *Nota: Con amor y un agradecimiento especial al Dr. Ryland Grace (Project Hail Mary) por la inspiración a bordo.*
