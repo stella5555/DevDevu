@@ -38,6 +38,7 @@ const SELF_CSS = `
   width: 100vw !important;
   height: 100vh !important;
   z-index: 9999 !important;
+  box-sizing: border-box !important; /* sin esto el padding desplazaba todo 24 px a la derecha y abajo */
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
@@ -401,6 +402,24 @@ const SELF_CSS = `
   0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
   40% { transform: translateY(-5px); opacity: 1; }
 }
+
+/* Pantallas estrechas: la mascota sube a la esquina superior izquierda, más
+   pequeña, para no tapar los controles del tutorial. */
+@media (max-width: 720px) {
+  .cinema-corner-fox {
+    top: 46px !important;
+    left: 16px !important;
+    right: auto !important;
+    bottom: auto !important;
+    flex-direction: row !important;
+  }
+  .cinema-fox-wheel { width: 52px; height: 52px; }
+  .cinema-fox-ring { inset: -4px; border-width: 2px; }
+  .cinema-fox-spin360 { width: 34px !important; height: 34px !important; }
+  .cinema-loading-line { font-size: 0.62rem; }
+  .cinema-controls-row { gap: 8px; }
+  .cinema-btn { padding: 0 10px !important; font-size: 0.72rem !important; }
+}
 `;
 
 function Emblem() {
@@ -542,6 +561,7 @@ export default function BootScreen({ leaving }) {
       className={`boot cinema-boot${leaving ? ' is-leaving' : ''}`}
       role="dialog"
       aria-modal="true"
+      aria-label="Pantalla de carga de Earth Information Jukebox"
       onClick={unlockVideoAudio}
     >
       <style>{SELF_CSS}</style>
@@ -552,6 +572,7 @@ export default function BootScreen({ leaving }) {
       <button
         type="button"
         className={`cinema-sound-btn${bootAudioOn ? ' is-on' : ''}`}
+        aria-pressed={bootAudioOn}
         onClick={toggleBootAudio}
       >
         {bootAudioOn ? '🔊 Sonido ON' : '🔇 Silencio'}
@@ -609,6 +630,7 @@ export default function BootScreen({ leaving }) {
               loop
               muted={!bootAudioOn}
               playsInline
+              aria-label={`Vídeo de demostración: ${TIPS[tip].title}`}
               onTimeUpdate={handleTimeUpdate}
             />
             <div className="cinema-timeline" onClick={handleSeek} role="presentation" title="Adelantar o retroceder">
@@ -632,7 +654,8 @@ export default function BootScreen({ leaving }) {
                   type="button"
                   className={`cinema-dot${i === tip ? ' is-active' : ''}${seenTips.has(i) ? ' is-seen' : ''}`}
                   onClick={() => setTip(i)}
-                  aria-label={`Consejo ${i + 1}`}
+                  aria-label={`Consejo ${i + 1}: ${item.title}`}
+                  aria-current={i === tip ? 'step' : undefined}
                 />
               ))}
             </div>
@@ -671,3 +694,24 @@ export default function BootScreen({ leaving }) {
   );
 }
 
+<p
+  style={{
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    margin: '8px 0 0',
+    fontSize: '0.74rem',
+    letterSpacing: '0.1em',
+    color: '#9fb2ce',
+    fontFamily: 'var(--font-data, monospace)',
+  }}
+>
+  <img
+    src={`${base}audifonos.png`}
+    alt=""
+    aria-hidden="true"
+    style={{ width: '18px', height: '18px', objectFit: 'contain' }}
+  />
+  <span>Se recomienda usar audífonos y activar el sonido arriba a la derecha para la experiencia completa</span>
+</p>

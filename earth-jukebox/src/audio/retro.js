@@ -91,6 +91,9 @@ export function playVoice() {
   }
 }
 
+// ¿Sigue sonando la voz grabada? Mientras dure, ARIA escribe sin blips.
+export const voicePlaying = () => Boolean(voice && !voice.paused && !voice.ended);
+
 export function stopVoice() {
   if (!voice) return;
   voice.pause();

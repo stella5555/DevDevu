@@ -109,6 +109,23 @@ class Ambient {
       o.stop(t + at + 0.2);
     });
   }
+
+  // La voz de ARIA mientras escribe: un blip corto de onda cuadrada, como en
+  // los diálogos de Undertale. El tono cambia un poco con cada letra.
+  blip(char = 'a') {
+    if (!this.ctx || this.muted || this.ctx.state !== 'running') return;
+    const t = this.ctx.currentTime;
+    const o = this.ctx.createOscillator();
+    o.type = 'square';
+    o.frequency.value = 540 + ((char.charCodeAt(0) * 37) % 6) * 26;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.02, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0008, t + 0.05);
+    o.connect(g).connect(this.ui);
+    o.start(t);
+    o.stop(t + 0.06);
+  }
 }
 
 export const ambient = new Ambient();

@@ -3,11 +3,15 @@ import { useState } from 'react';
 // Tarjeta de "Misión activa": objetivo, pasos, ayuda viva, medidores y el
 // control propio de cada mecánica (deslizador de años, botón de marcar…).
 // `view` cambia cada vez que la misión avisa de que algo se ha movido.
-export default function MissionCard({ spec, mission, view, completed, gaugeRef }) {
+// `guide` dice qué control toca ahora ({ target, step }) y `locked` bloquea el
+// botón de la misión hasta que se haya dado el paso previo.
+export default function MissionCard({ spec, mission, view, completed, guide, locked, gaugeRef }) {
   const control = mission?.control;
   const [value, setValue] = useState(control?.type === 'slider' ? control.value : 0);
   const done = view.done;
   const finished = done.length > 0 && done.every(Boolean);
+  const current = done.findIndex((ok) => !ok); // el paso que toca
+  const glow = (target) => (guide?.target === target ? ' is-guide' : '');
 
   return (
     <section className={`mission${finished ? ' is-done' : ''}`} aria-label="Misión activa">
@@ -19,7 +23,7 @@ export default function MissionCard({ spec, mission, view, completed, gaugeRef }
       <p>{spec.brief}</p>
       <ol>
         {spec.steps.map((step, i) => (
-          <li key={step} className={done[i] ? 'is-done' : ''}>
+          <li key={step} className={done[i] ? 'is-done' : i === current ? 'is-current' : ''}>
             <span aria-hidden="true">{done[i] ? '✓' : i + 1}</span>
             {step}
             {done[i] && <span className="sr-only"> (hecho)</span>}
@@ -28,9 +32,10 @@ export default function MissionCard({ spec, mission, view, completed, gaugeRef }
       </ol>
 
       {control?.type === 'slider' && (
-        <label className="mission-slider">
+        <label className={`mission-slider${glow('slider')}`}>
           <span>
             {control.label} <b>{control.format(value)}</b>
+            {guide?.target === 'slider' && <span className="step-chip">Paso {guide.step}</span>}
           </span>
           <input
             type="range"
@@ -61,9 +66,14 @@ export default function MissionCard({ spec, mission, view, completed, gaugeRef }
       ))}
 
       {control?.type === 'button' && (
-        <button type="button" className="btn mission-action" onClick={() => mission.action()}>
-          {control.label}
-        </button>
+        <>
+          <button type="button" className={`btn mission-action${glow('action')}${locked ? ' is-locked' : ''}`} disabled={locked} onClick={() => mission.action()}>
+            {locked && <span aria-hidden="true">🔒</span>}
+            {control.label}
+            {(locked || guide?.target === 'action') && <span className="step-chip">Paso 2</span>}
+          </button>
+          {locked && <p className="mission-lock">Paso 1: congela el vídeo para desbloquear este botón.</p>}
+        </>
       )}
 
       <p className="mission-hint" role="status">

@@ -208,6 +208,22 @@ export default function AnalyticsJukebox({ anomaly }) {
     setFrozen(!frozen);
   };
 
+  // Guía paso a paso: en cada momento brilla un solo control, con su «Paso N»,
+  // para que se vea qué toca ahora. No cambia las reglas de la misión, salvo
+  // que la sonda no deja marcar el punto crítico hasta congelar el vídeo.
+  const kind = config.mission.kind;
+  const pending = view.done.findIndex((ok) => !ok); // -1: misión terminada (o aún sin cargar)
+  const stepped = kind === 'probe' && loops && pending >= 0; // congelar → marcar
+  let guide = null; // { target: 'freeze' | 'action' | 'slider' | 'isolate' | 'viewer', step }
+  if (source && pending >= 0) {
+    if (stepped) guide = frozen ? { target: 'action', step: 2 } : { target: 'freeze', step: 1 };
+    else if (kind === 'probe' && pending === 1) guide = { target: 'action', step: 2 };
+    else if (kind === 'timeTravel' && pending === 0) guide = { target: 'slider', step: 1 };
+    else if (kind === 'separate' && pending === 0) guide = { target: 'isolate', step: 1 };
+    else guide = { target: 'viewer', step: pending + 1 };
+  }
+  const chip = (target) => guide?.target === target && <span className="step-chip">Paso {guide.step}</span>;
+
   // Teclado de la estación: Espacio sintoniza/pausa; Tab no sale del panel.
   const toggleRef = useRef(toggle);
   toggleRef.current = toggle;
@@ -500,7 +516,7 @@ export default function AnalyticsJukebox({ anomaly }) {
 
         <div className="station-grid">
           <div className="station-col">
-            <figure className="viewer">
+            <figure className={`viewer${guide?.target === 'viewer' ? ' is-guide' : ''}`}>
               <canvas
                 ref={viewer}
                 style={{ '--ar': aspect }}
@@ -513,7 +529,10 @@ export default function AnalyticsJukebox({ anomaly }) {
                 onPointerLeave={pointer('leave')}
               />
               {!source && <p className="viewer-loading">Cargando el vídeo…</p>}
-              <figcaption>{caption}</figcaption>
+              <figcaption>
+                {chip('viewer')}
+                {caption}
+              </figcaption>
             </figure>
 
             <div className="transport">
@@ -521,15 +540,19 @@ export default function AnalyticsJukebox({ anomaly }) {
                 {playing ? '❚❚ Pausar barrido' : '▶ Sintonizar / sonificar datos'}
               </button>
               {loops && (
-                <button type="button" className="btn" aria-pressed={frozen} onClick={freeze}>
+                <button type="button" className={`btn${guide?.target === 'freeze' ? ' is-guide' : ''}`} aria-pressed={frozen} onClick={freeze}>
                   {frozen ? '▶ Reanudar vídeo' : '❚❚ Congelar vídeo'}
+                  {stepped && <span className="step-chip">{frozen ? '✓ Paso 1' : 'Paso 1'}</span>}
                 </button>
               )}
               {!audio && <span className="station-note">Este navegador no tiene audio: el barrido sigue en modo visual.</span>}
             </div>
 
-            <div className="isolate" role="group" aria-label="Aislar fenómeno">
-              <h3>Aislar fenómeno</h3>
+            <div className={`isolate${guide?.target === 'isolate' ? ' is-guide' : ''}`} role="group" aria-label="Aislar fenómeno">
+              <h3>
+                Aislar fenómeno
+                {chip('isolate')}
+              </h3>
               <div>
                 <button type="button" className="btn" aria-pressed={isolated < 0} onClick={() => setIsolated(-1)}>
                   Todo
@@ -557,6 +580,8 @@ export default function AnalyticsJukebox({ anomaly }) {
                 mission={rt.current.mission}
                 view={view}
                 completed={completed}
+                guide={guide}
+                locked={stepped && !frozen}
                 gaugeRef={(i, el) => (gauges.current[i] = el)}
               />
             )}

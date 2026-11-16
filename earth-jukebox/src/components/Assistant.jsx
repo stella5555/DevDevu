@@ -5,6 +5,7 @@ import { telemetry } from '../state/telemetry.js';
 import { scan, useScanner } from '../state/scanner.js';
 import { say, useAssistant } from '../state/assistant.js';
 import { ambient } from '../audio/ambient.js';
+import { voicePlaying } from '../audio/retro.js';
 
 // ARIA, la guía de a bordo. Vive por encima de la cabina, la estación y el
 // museo: comenta lo que acaba de pasar y, a petición, da una pista.
@@ -12,8 +13,14 @@ import { ambient } from '../audio/ambient.js';
 // En la cabina se queda abierta; sobre la estación o el museo —y siempre en
 // pantallas estrechas— se recoge sola a los pocos segundos de hablar, para no
 // tapar lo que hay debajo.
+//
+// Habla como en Undertale: el texto se escribe solo, deprisa, con un blip por
+// sílaba. Los blips salen por el canal de avisos del ambiente, así que callan
+// con «Ambiente apagado», y esperan si aún suena la voz grabada del arranque.
 
-const SPEAK_MS = 2600; // cuánto se mueve el indicador de voz tras cada mensaje
+const TYPE_MS = 22; // por letra
+const BLIP_EVERY = 3; // un blip cada tres letras de una palabra: más o menos, una sílaba
+const LETTER = /[\p{L}\p{N}]/u;
 const FOLD_MS = 9000;
 const NUDGE_MS = 45000; // sin avances con el escáner encendido: ofrecer pista
 const total = ANOMALIES.length;
@@ -29,8 +36,11 @@ export default function Assistant() {
   const message = useAssistant();
 
   const [open, setOpen] = useState(true);
-  const [speaking, setSpeaking] = useState(false);
+  const [typed, setTyped] = useState({ id: 0, count: 0 }); // letras ya escritas del mensaje `id`
   const [muted, setMuted] = useState(false);
+  const rushed = useRef(0); // mensaje que el jugador ha pedido ver entero
+  const openRef = useRef(open);
+  openRef.current = open;
   const seen = useRef({ identified: identified.length, missions: missions.length, firsts: new Set() });
   const overlay = openId !== null || museum;
 
@@ -115,26 +125,58 @@ export default function Assistant() {
     return () => clearInterval(id);
   }, [booted, overlay, identified]);
 
-  // ── Indicador de voz y plegado ──
+  // ── Plegado ──
   useEffect(() => {
     if (!message.id) return undefined;
-    setSpeaking(true);
     setOpen(true);
-    const quiet = setTimeout(() => setSpeaking(false), SPEAK_MS);
     const narrow = window.matchMedia('(max-width: 720px)').matches;
     const fold = overlay || narrow ? setTimeout(() => setOpen(false), FOLD_MS) : 0;
-    return () => {
-      clearTimeout(quiet);
-      clearTimeout(fold);
-    };
+    return () => clearTimeout(fold);
   }, [message.id, overlay]);
+
+  // ── Máquina de escribir con blips ──
+  useEffect(() => {
+    if (!message.id) return undefined;
+    const { id, text } = message;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setTyped({ id, count: text.length });
+      return undefined;
+    }
+    const t0 = performance.now();
+    let last = 0;
+    let run = 0; // letras seguidas de la palabra en curso
+    const timer = setInterval(() => {
+      const count = rushed.current === id ? text.length : Math.min(text.length, Math.floor((performance.now() - t0) / TYPE_MS) + 1);
+      if (count === last) return;
+      let voiced = '';
+      for (let i = last; i < count; i++) {
+        if (!LETTER.test(text[i])) run = 0;
+        else if (run++ % BLIP_EVERY === 0) voiced = text[i];
+      }
+      // Sin blips si el jugador saltó el texto, si ARIA está plegada o la
+      // pestaña oculta, ni encima de la voz grabada de la cinemática.
+      if (voiced && rushed.current !== id && openRef.current && !document.hidden && !voicePlaying()) ambient.blip(voiced);
+      last = count;
+      setTyped({ id, count });
+      if (count >= text.length) clearInterval(timer);
+    }, TYPE_MS);
+    return () => clearInterval(timer);
+  }, [message.id]);
 
   // El ambiente se retira cuando suena otra cosa.
   useEffect(() => {
     ambient.setDuck(!booted || overlay ? 0 : active ? 0.4 : 1);
   }, [booted, overlay, active]);
 
+  // La pantalla de arranque puede dejar el sonido apagado: el botón lo refleja.
+  useEffect(() => {
+    if (booted) setMuted(ambient.muted);
+  }, [booted]);
+
   if (!booted) return null;
+
+  const count = typed.id === message.id ? typed.count : 0;
+  const speaking = count < message.text.length; // el indicador de voz se mueve mientras escribe
 
   // El botón de pista hace lo que toca en cada vista.
   const hint = () => {
@@ -167,7 +209,15 @@ export default function Assistant() {
       </button>
       {open && (
         <div className="aria-body">
-          <p role="status">{message.text}</p>
+          {/* El lector de pantalla recibe el mensaje entero; el tecleo es visual.
+              La parte aún sin escribir ocupa su sitio para que el panel no salte. */}
+          <p className="sr-only" role="status">
+            {message.text}
+          </p>
+          <p aria-hidden="true" onClick={() => (rushed.current = message.id)}>
+            {message.text.slice(0, count)}
+            <span style={{ visibility: 'hidden' }}>{message.text.slice(count)}</span>
+          </p>
           <div className="aria-actions">
             <button type="button" className="btn aria-hint" onClick={hint}>
               {openId ? 'Recordar la misión' : museum ? '¿Qué hago aquí?' : 'Pedir pista · triangular señal'}

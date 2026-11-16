@@ -206,21 +206,7 @@ export default function DiscoveryMuseum() {
                   <h4>
                     {nameOf(link.a)} ↔ {nameOf(link.b)}
                   </h4>
-                  {revealed(link) ? (
-                    <>
-                      <p className="museum-relation">{link.title}</p>
-                      <p>{link.text}</p>
-                    </>
-                  ) : (
-                    <p>Hilo sin descubrir: identifica con el escáner las señales de sus dos extremos para leer cómo se relacionan.</p>
-                  )}
-                  <div className="museum-links">
-                    {[link.a, link.b].map((id) => (
-                      <button key={id} type="button" className="btn" onClick={() => setSelected(id === 'hub' ? { type: 'hub' } : { type: 'node', id })}>
-                        Ver {nameOf(id)}
-                      </button>
-                    ))}
-                  </div>
+                  <p className="station-note">La explicación está en el cuadro flotante, junto a la red.</p>
                 </div>
               )}
 
@@ -267,6 +253,37 @@ export default function DiscoveryMuseum() {
             </nav>
           </div>
         </div>
+
+        {/* La explicación del hilo elegido flota a un lado de la red, siempre a
+            la vista: no hay que desplazar la columna lateral para leerla. */}
+        {link && (
+          <aside key={link.id} className="museum-float" aria-label="Hilo causal seleccionado">
+            <header>
+              <h3>Hilo causal</h3>
+              <button type="button" className="btn btn-icon" onClick={() => setSelected({ type: 'hub' })} aria-label="Cerrar la explicación del hilo">
+                ✕
+              </button>
+            </header>
+            <h4>
+              {nameOf(link.a)} ↔ {nameOf(link.b)}
+            </h4>
+            {revealed(link) ? (
+              <>
+                <p className="museum-relation">{link.title}</p>
+                <p>{link.text}</p>
+              </>
+            ) : (
+              <p>Hilo sin descubrir: identifica con el escáner las señales de sus dos extremos para leer cómo se relacionan.</p>
+            )}
+            <div className="museum-links">
+              {[link.a, link.b].map((id) => (
+                <button key={id} type="button" className="btn" onClick={() => setSelected(id === 'hub' ? { type: 'hub' } : { type: 'node', id })}>
+                  Ver {nameOf(id)}
+                </button>
+              ))}
+            </div>
+          </aside>
+        )}
       </section>
     </div>
   );
