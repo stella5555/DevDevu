@@ -117,6 +117,7 @@ function timeTravel(m) {
   const top = tracker(m, m.spec.growth);
   let year = from;
   let pulse = 0;
+  Object.defineProperty(M, 'year', { get: () => year }); // lo lee la curva temporal
   M.control = { type: 'slider', label: 'Año', min: from, max: to, step: 0.05, value: from, format: (value) => String(Math.round(value)) };
   M.hint = `Estás en ${from}. Arrastra el deslizador hacia ${to}.`;
   // El fotograma de 2012 es la referencia de "lo que ha crecido".
@@ -234,6 +235,7 @@ function buoy(m) {
   const { warm, flow, cold } = m.spec;
   const fastest = tracker(m, flow);
   const item = draggable(M, m, [0.08, 0.86]);
+  M.item = item; // lo lee el perfil norte–sur
   const read = { flow: 0, warmth: 0.5, water: false };
   let beat = 0;
   let held = 0;

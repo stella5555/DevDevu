@@ -3,7 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ANOMALIES } from '../data/anomalies.js';
 import { telemetry } from '../state/telemetry.js';
-import { useScanner, isPanelOpen, openMuseum } from '../state/scanner.js';
+import { useScanner, isPanelOpen, enterMuseum } from '../state/scanner.js';
 
 // La Escotilla del Museo de los Descubrimientos, en el mamparo trasero de la
 // cabina (hay que girarse 180°). Su aro se enciende en dorado con la primera
@@ -61,7 +61,7 @@ export default function Hatch() {
   const open = (e) => {
     if (e.delta > 6) return; // era un arrastre para mirar, no un clic
     e.stopPropagation();
-    openMuseum();
+    enterMuseum();
   };
 
   return (

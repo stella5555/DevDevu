@@ -1,23 +1,38 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ANOMALIES, CATEGORIES } from '../../data/anomalies.js';
 import { MUSEUM, LINKS, nodePosition } from '../../data/museum.js';
 import { symphony } from '../../audio/symphony.js';
-import { earthVertex, earthFragment } from '../../shaders/earth.js';
+import EarthGlobe from '../EarthGlobe.jsx';
 import Starfield from '../Starfield.jsx';
 import { CRAFT } from './Miniatures.jsx';
 
 // Escena 3D del museo: la Red del Sistema Terrestre. La Tierra en el centro,
 // los 10 nodos alrededor (miniatura del instrumento, póster y nombre) y los
 // hilos causales entre ellos. Nodos e hilos se pueden pulsar; la cámara
-// orbita sola y se puede arrastrar.
+// orbita sola y se puede arrastrar. Al elegir un hilo, la cámara se acerca a
+// él y unos pulsos de energía lo recorren del fenómeno origen al destino.
 
 const GOLD = '#ffd166';
 const AMBER = '#ffb454';
 const SCOPE = '#59ffc8';
 const LOCKED = '#56627a';
 const SUN = new THREE.Vector3(-0.6, 0.5, 0.7).normalize();
+
+const REST = new THREE.Vector3(0, 0.7, 0); // a dónde mira la cámara sin nada elegido
+
+// Curva de un hilo: de su nodo origen (a) a su destino (b), combada hacia el centro.
+function linkCurve(link) {
+  const a = new THREE.Vector3(...nodePosition(link.a));
+  const b = new THREE.Vector3(...nodePosition(link.b));
+  const mid = a.clone().add(b).multiplyScalar(0.5);
+  if (link.b !== 'hub') {
+    mid.multiplyScalar(0.62);
+    mid.y += 0.5;
+  }
+  return new THREE.QuadraticBezierCurve3(a, mid, b);
+}
 
 // Brillo de cada nodo (0..1) al compás de la Sinfonía Planetaria.
 const pulses = {};
@@ -36,9 +51,19 @@ function Conductor() {
 }
 
 // Cámara en órbita alrededor de la red: gira despacio sola y se arrastra.
-function OrbitRig() {
+// Con `focus` ({ point, radius }) se coloca delante de ese punto y se acerca.
+function OrbitRig({ focus }) {
   const { camera, gl, size } = useThree();
-  const state = useRef({ yaw: 0.45, pitch: 0.56, radius: 14, drag: false, x: 0, y: 0, idle: 3 });
+  const state = useRef({ yaw: 0.45, pitch: 0.56, radius: 14, drag: false, x: 0, y: 0, idle: 3, aim: null, goal: null });
+  const look = useRef(REST.clone());
+
+  // Nuevo enfoque: hacia qué lado girar y cuánto acercarse.
+  useEffect(() => {
+    const st = state.current;
+    st.aim = focus ? Math.atan2(focus.point.x, focus.point.z) : null;
+    st.goal = focus ? focus.radius : 14;
+    if (focus) st.idle = 0;
+  }, [focus]);
 
   useEffect(() => {
     const el = gl.domElement;
@@ -58,6 +83,7 @@ function OrbitRig() {
       s.x = e.clientX;
       s.y = e.clientY;
       s.idle = 0;
+      s.aim = null; // quien arrastra manda sobre el enfoque automático
     };
     const up = () => {
       s.drag = false;
@@ -65,6 +91,7 @@ function OrbitRig() {
     const wheel = (e) => {
       e.preventDefault();
       s.radius = THREE.MathUtils.clamp(s.radius + e.deltaY * 0.008, 8, 19);
+      s.goal = null;
       s.idle = 0;
     };
     el.addEventListener('pointerdown', down);
@@ -85,12 +112,20 @@ function OrbitRig() {
     const s = state.current;
     s.idle += dt;
     const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!s.drag && s.idle > 2.5 && !still) s.yaw += dt * 0.05;
+    const ease = 1 - Math.exp(-dt * 3);
+    if (s.aim !== null) {
+      const turn = Math.atan2(Math.sin(s.aim - s.yaw), Math.cos(s.aim - s.yaw)); // por el lado corto
+      s.yaw += turn * ease;
+    } else if (!s.drag && s.idle > 2.5 && !still && !focus) {
+      s.yaw += dt * 0.05;
+    }
+    if (s.goal !== null) s.radius += (s.goal - s.radius) * ease;
+    look.current.lerp(focus ? focus.point : REST, ease);
     // En lienzos estrechos (móvil) la cámara se aleja para que quepa el anillo.
     const radius = s.radius * Math.max(1, 1.3 / (size.width / size.height));
     const flat = Math.cos(s.pitch) * radius;
     camera.position.set(Math.sin(s.yaw) * flat, 0.7 + Math.sin(s.pitch) * radius, Math.cos(s.yaw) * flat);
-    camera.lookAt(0, 0.7, 0);
+    camera.lookAt(look.current);
   });
   return null;
 }
@@ -226,19 +261,16 @@ function Node({ anomaly, known, starred, selected, onSelect }) {
 
 function Hub({ selected, onSelect }) {
   const globe = useRef();
-  const uniforms = useMemo(() => ({ uTime: { value: 0 }, uSun: { value: SUN.clone() } }), []);
   const label = useLabel('Centro de la red', '#eafff8');
   const { hover, handlers } = usePointerCursor();
   useFrame((_, dt) => {
     globe.current.rotation.y += dt * 0.12;
-    uniforms.uTime.value += dt;
   });
   return (
     <group>
-      <mesh ref={globe} onClick={clicked(() => onSelect({ type: 'hub' }))} {...handlers}>
-        <sphereGeometry args={[0.95, 48, 48]} />
-        <shaderMaterial vertexShader={earthVertex} fragmentShader={earthFragment} uniforms={uniforms} />
-      </mesh>
+      <group ref={globe} onClick={clicked(() => onSelect({ type: 'hub' }))} {...handlers}>
+        <EarthGlobe radius={0.95} sun={SUN} />
+      </group>
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[1.25, selected || hover ? 0.03 : 0.015, 8, 72]} />
         <meshBasicMaterial color={selected ? AMBER : SCOPE} transparent opacity={selected || hover ? 0.9 : 0.4} />
@@ -250,18 +282,40 @@ function Hub({ selected, onSelect }) {
   );
 }
 
+// Pulsos de energía que recorren un hilo del nodo origen al destino: la
+// relación causal se ve, además de leerse.
+const PULSES = 7;
+function EnergyPulses({ curve }) {
+  const group = useRef();
+  const point = useMemo(() => new THREE.Vector3(), []);
+  useFrame(({ clock }) => {
+    group.current.children.forEach((pulse, i) => {
+      const t = (clock.elapsedTime * 0.85 + i / PULSES) % 1;
+      curve.getPoint(t, point);
+      pulse.position.copy(point);
+      // Nacen pequeños en el origen, crecen por el camino y se apagan al llegar.
+      const swell = Math.sin(t * Math.PI);
+      pulse.scale.setScalar(0.5 + 1.1 * swell);
+      pulse.material.opacity = 0.25 + 0.75 * swell;
+    });
+  });
+  return (
+    <group ref={group}>
+      {Array.from({ length: PULSES }, (_, i) => (
+        <mesh key={i}>
+          <sphereGeometry args={[0.085, 12, 12]} />
+          <meshBasicMaterial color="#ffe2a8" transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 // Hilo causal entre dos nodos: un tubo fino curvado hacia el centro.
 function Thread({ link, revealed, selected, onSelect }) {
-  const { line, zone } = useMemo(() => {
-    const a = new THREE.Vector3(...nodePosition(link.a));
-    const b = new THREE.Vector3(...nodePosition(link.b));
-    const mid = a.clone().add(b).multiplyScalar(0.5);
-    if (link.b !== 'hub') {
-      mid.multiplyScalar(0.62);
-      mid.y += 0.5;
-    }
-    const curve = new THREE.QuadraticBezierCurve3(a, mid, b);
-    return { line: new THREE.TubeGeometry(curve, 48, 0.03, 8), zone: new THREE.TubeGeometry(curve, 24, 0.15, 6) };
+  const { curve, line, zone } = useMemo(() => {
+    const curve = linkCurve(link);
+    return { curve, line: new THREE.TubeGeometry(curve, 48, 0.03, 8), zone: new THREE.TubeGeometry(curve, 24, 0.15, 6) };
   }, [link]);
   useEffect(() => () => {
     line.dispose();
@@ -278,6 +332,7 @@ function Thread({ link, revealed, selected, onSelect }) {
 
   return (
     <group>
+      {selected && revealed && <EnergyPulses curve={curve} />}
       <mesh geometry={line}>
         <meshBasicMaterial ref={material} color={lit ? AMBER : !revealed ? LOCKED : link.bridge ? '#8fa3c8' : SCOPE} transparent opacity={0.3} />
       </mesh>
@@ -289,6 +344,13 @@ function Thread({ link, revealed, selected, onSelect }) {
 }
 
 export default function Network({ identified, missions, selected, onSelect }) {
+  // Un hilo se enfoca en su punto medio, de cerca; un nodo, algo más lejos.
+  const focus = useMemo(() => {
+    if (selected.type === 'link') return { point: linkCurve(LINKS.find((link) => link.id === selected.id)).getPoint(0.5), radius: 9.5 };
+    if (selected.type === 'node') return { point: new THREE.Vector3(...nodePosition(selected.id)), radius: 11 };
+    return null;
+  }, [selected]);
+
   return (
     <>
       <color attach="background" args={['#04060d']} />
@@ -296,9 +358,11 @@ export default function Network({ identified, missions, selected, onSelect }) {
       <directionalLight color="#ffffff" intensity={2.2} position={[4, 6, 8]} />
       <directionalLight color="#ffb454" intensity={0.8} position={[-6, -2, -4]} />
       <Starfield count={900} radius={80} />
-      <OrbitRig />
+      <OrbitRig focus={focus} />
       <Conductor />
-      <Hub selected={selected.type === 'hub'} onSelect={onSelect} />
+      <Suspense fallback={null}>
+        <Hub selected={selected.type === 'hub'} onSelect={onSelect} />
+      </Suspense>
       {LINKS.map((link) => (
         <Thread
           key={link.id}

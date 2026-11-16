@@ -9,8 +9,9 @@ import { ambient } from '../audio/ambient.js';
 // ARIA, la guía de a bordo. Vive por encima de la cabina, la estación y el
 // museo: comenta lo que acaba de pasar y, a petición, da una pista.
 //
-// En la cabina se queda abierta; sobre la estación o el museo se recoge sola
-// a los pocos segundos de hablar, para no tapar lo que hay debajo.
+// En la cabina se queda abierta; sobre la estación o el museo —y siempre en
+// pantallas estrechas— se recoge sola a los pocos segundos de hablar, para no
+// tapar lo que hay debajo.
 
 const SPEAK_MS = 2600; // cuánto se mueve el indicador de voz tras cada mensaje
 const FOLD_MS = 9000;
@@ -45,7 +46,7 @@ export default function Assistant() {
     if (!booted) return;
     if (identified.length === total) say('Cabina encendida. Ya tienes las 10 señales: abre sus estaciones para completar las misiones ★ o visita el museo.');
     else if (identified.length) say(`Cabina encendida. Llevas ${identified.length} de ${total} señales. Activa el escáner con Espacio para seguir buscando, o pídeme una pista.`);
-    else say('Te doy la bienvenida a bordo. Activa el escáner con Espacio y pasea la mira sobre la Tierra: cuando la estática se vuelva música, hay una señal cerca.');
+    else say('Energía restaurada: el onduloscopio vuelve a estar en línea. Activa el escáner con Espacio y pasea la mira sobre la Tierra: cuando la estática se vuelva música, hay una señal cerca.');
   }, [booted]);
 
   useEffect(() => {
@@ -89,14 +90,20 @@ export default function Assistant() {
     if (!booted) return undefined;
     let quiet = performance.now();
     let found = identified.length;
+    let behind = 0; // segundos seguidos con la señal más fuerte tras el planeta
+    let near = 0; // segundos seguidos con una señal fuerte sin fijar
     const id = setInterval(() => {
       if (overlay) {
         quiet = performance.now();
         return;
       }
       if (telemetry.onHatch) once('hatch', 'Esa es la escotilla del Museo de los Descubrimientos. Ábrela con Enter o con un clic.');
-      if (scan.active && scan.hidden && scan.signal > 0.08) once('hidden', 'Esa señal llega desde detrás del planeta. Mantén Q o E para girar la órbita hasta que asome.');
-      else if (scan.active && scan.signal > 0.55 && scan.pending === false && scan.focus < 0) once('close', 'Señal fuerte. Afina la mira hasta que la onda quede limpia y mantenla quieta 1,5 segundos.');
+      // Estos dos consejos esperan unos segundos: no deben pisar al que
+      // acaba de salir ni saltar por un roce de la mira.
+      behind = scan.active && scan.hidden && scan.signal > 0.1 ? behind + 0.6 : 0;
+      near = scan.active && !scan.hidden && scan.signal > 0.55 && !scan.pending && scan.focus < 0 ? near + 0.6 : 0;
+      if (behind > 6) once('hidden', 'Esa señal tenue llega desde detrás del planeta. Mantén Q o E para girar la órbita hasta que asome.');
+      else if (near > 3) once('close', 'Señal fuerte. Afina la mira hasta que la onda quede limpia y mantenla quieta 1,5 segundos.');
       if (identified.length !== found || !scan.active) {
         found = identified.length;
         quiet = performance.now();
@@ -114,7 +121,8 @@ export default function Assistant() {
     setSpeaking(true);
     setOpen(true);
     const quiet = setTimeout(() => setSpeaking(false), SPEAK_MS);
-    const fold = overlay ? setTimeout(() => setOpen(false), FOLD_MS) : 0;
+    const narrow = window.matchMedia('(max-width: 720px)').matches;
+    const fold = overlay || narrow ? setTimeout(() => setOpen(false), FOLD_MS) : 0;
     return () => {
       clearTimeout(quiet);
       clearTimeout(fold);
@@ -123,8 +131,8 @@ export default function Assistant() {
 
   // El ambiente se retira cuando suena otra cosa.
   useEffect(() => {
-    ambient.setDuck(overlay ? 0 : active ? 0.4 : 1);
-  }, [overlay, active]);
+    ambient.setDuck(!booted || overlay ? 0 : active ? 0.4 : 1);
+  }, [booted, overlay, active]);
 
   if (!booted) return null;
 

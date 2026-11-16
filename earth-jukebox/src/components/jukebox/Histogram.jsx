@@ -27,7 +27,8 @@ function binned(counts) {
 }
 const compact = (n) => (n >= 1000 ? `${n / 1000}K` : String(n));
 
-const Histogram = forwardRef(function Histogram({ layers }, ref) {
+// Con `bare` no pone marco ni título: va dentro de DatasetChart.
+const Histogram = forwardRef(function Histogram({ layers, bare = false }, ref) {
   const canvas = useRef();
   const data = useRef({ hist: null, marker: null, total: 1 });
   const [hover, setHover] = useState(null); // tramo 0..31 bajo el puntero
@@ -150,6 +151,7 @@ const Histogram = forwardRef(function Histogram({ layers }, ref) {
     const t = (e.clientX - box.left - PAD.left) / (box.width - PAD.left - PAD.right);
     setHover(Math.min(BINS - 1, Math.floor(Math.min(1, Math.max(0, t)) * BINS)));
   };
+  const Frame = bare ? 'div' : 'figure';
   const share = (k) => {
     const { hist, total } = data.current;
     const percent = hist ? (binned(hist[k])[hover] / total) * 100 : 0;
@@ -157,11 +159,13 @@ const Histogram = forwardRef(function Histogram({ layers }, ref) {
   };
 
   return (
-    <figure className="histogram">
-      <figcaption>
-        <h3>Histograma de fenómenos</h3>
-        <span>píxeles por intensidad · escala logarítmica</span>
-      </figcaption>
+    <Frame className={bare ? undefined : 'histogram'}>
+      {!bare && (
+        <figcaption>
+          <h3>Histograma de fenómenos</h3>
+          <span>píxeles por intensidad · escala logarítmica</span>
+        </figcaption>
+      )}
       <div className="histogram-plot">
         <canvas
           ref={canvas}
@@ -197,7 +201,8 @@ const Histogram = forwardRef(function Histogram({ layers }, ref) {
           Franja actual
         </li>
       </ul>
-    </figure>
+      {bare && <p className="chart-summary">Píxeles del fotograma por intensidad de cada fenómeno · escala logarítmica.</p>}
+    </Frame>
   );
 });
 

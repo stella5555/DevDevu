@@ -1,12 +1,14 @@
-// Tierra procedural (sin texturas externas). En el Pilar 2 se sustituirá el
-// color de superficie por Blue Marble / capas SVS, conservando la iluminación.
+// Iluminación de la Tierra. La superficie es la textura del modelo
+// public/earth.glb (Blue Marble real); este shader pone encima lo que el
+// modelo no trae: el día y la noche según la posición del Sol, el reflejo del
+// Sol en el mar y el halo azul de la atmósfera en los bordes.
 
 export const earthVertex = /* glsl */ `
-  varying vec3 vObj;
+  varying vec2 vUv;
   varying vec3 vNw;
   varying vec3 vPw;
   void main() {
-    vObj = normalize(position);
+    vUv = uv;
     vNw = normalize(mat3(modelMatrix) * normal);
     vec4 w = modelMatrix * vec4(position, 1.0);
     vPw = w.xyz;
@@ -14,75 +16,32 @@ export const earthVertex = /* glsl */ `
   }
 `;
 
-const noise = /* glsl */ `
-  float hash(vec3 p) {
-    p = fract(p * 0.3183099 + 0.1);
-    p *= 17.0;
-    return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
-  }
-  float noise(vec3 x) {
-    vec3 i = floor(x);
-    vec3 f = fract(x);
-    f = f * f * (3.0 - 2.0 * f);
-    return mix(
-      mix(mix(hash(i), hash(i + vec3(1, 0, 0)), f.x),
-          mix(hash(i + vec3(0, 1, 0)), hash(i + vec3(1, 1, 0)), f.x), f.y),
-      mix(mix(hash(i + vec3(0, 0, 1)), hash(i + vec3(1, 0, 1)), f.x),
-          mix(hash(i + vec3(0, 1, 1)), hash(i + vec3(1, 1, 1)), f.x), f.y),
-      f.z);
-  }
-  float fbm(vec3 p) {
-    float a = 0.5;
-    float s = 0.0;
-    for (int i = 0; i < 5; i++) {
-      s += a * noise(p);
-      p = p * 2.03 + vec3(11.7);
-      a *= 0.5;
-    }
-    return s;
-  }
-`;
-
 export const earthFragment = /* glsl */ `
   precision highp float;
-  uniform float uTime;
+  uniform sampler2D uMap;
   uniform vec3 uSun;
-  varying vec3 vObj;
+  varying vec2 vUv;
   varying vec3 vNw;
   varying vec3 vPw;
-  ${noise}
   void main() {
-    vec3 p = vObj;
-    float h = fbm(p * 2.1 + vec3(3.1, 1.7, 5.3)) + 0.08 * (fbm(p * 7.0) - 0.5);
-    float land = smoothstep(0.50, 0.53, h);
-    float lat = abs(p.y);
-    float dry = fbm(p * 4.0 + vec3(20.0));
-
-    vec3 ocean = mix(vec3(0.01, 0.04, 0.13), vec3(0.03, 0.20, 0.34), smoothstep(0.36, 0.50, h));
-    vec3 ground = mix(vec3(0.06, 0.20, 0.07), vec3(0.42, 0.34, 0.19), smoothstep(0.45, 0.60, dry));
-    ground = mix(ground, vec3(0.30, 0.26, 0.22), smoothstep(0.60, 0.70, h));
-    float ice = smoothstep(0.80, 0.90, lat + (dry - 0.5) * 0.2);
-    vec3 surf = mix(mix(ocean, ground, land), vec3(0.90, 0.94, 1.0), ice);
-
-    float c1 = fbm(p * 3.2 + vec3(uTime * 0.008, 0.0, uTime * 0.005));
-    float c2 = fbm(p * 9.0 - vec3(uTime * 0.006));
-    float cloud = smoothstep(0.50, 0.70, c1 * 0.7 + c2 * 0.3);
-
-    float cells = noise(p * 150.0) * noise(p * 34.0 + 5.0);
-    float lights = land * (1.0 - ice) * smoothstep(0.34, 0.6, cells);
+    vec3 surf = texture2D(uMap, vUv).rgb;
+    // Mar: donde el azul manda sobre el rojo y el verde.
+    float water = smoothstep(0.0, 0.08, surf.b - max(surf.r, surf.g));
 
     vec3 N = normalize(vNw);
     vec3 L = normalize(uSun);
     vec3 V = normalize(cameraPosition - vPw);
     float d = dot(N, L);
-    float day = smoothstep(-0.12, 0.22, d);
-    float lit = day * (0.2 + 0.9 * max(d, 0.0));
+    float day = smoothstep(-0.12, 0.22, d); // terminador suave
+    float lit = day * (0.3 + 1.0 * max(d, 0.0));
 
-    vec3 col = surf * (0.015 + lit);
-    col += vec3(1.0, 0.95, 0.8) * pow(max(dot(N, normalize(L + V)), 0.0), 70.0) * (1.0 - land) * day * 0.6;
-    col = mix(col, vec3(1.0) * (0.02 + lit * 1.05), cloud * 0.88);
-    col += vec3(1.0, 0.72, 0.38) * lights * (1.0 - day) * (1.0 - cloud * 0.8) * 1.2;
+    // Lado nocturno casi a oscuras: queda un rastro para adivinar los continentes.
+    vec3 col = surf * (0.025 + lit);
+    // Reflejo del Sol sobre el mar.
+    col += vec3(1.0, 0.95, 0.8) * pow(max(dot(N, normalize(L + V)), 0.0), 70.0) * water * day * 0.5;
 
+    // Atmósfera: borde azul, más vivo en el lado de día, y franja anaranjada
+    // en el terminador.
     float fres = pow(1.0 - max(dot(N, V), 0.0), 2.5);
     col += vec3(0.20, 0.45, 1.0) * fres * (0.08 + day * 0.7);
     col += vec3(0.90, 0.35, 0.10) * fres * smoothstep(0.35, 0.0, abs(d)) * 0.25;

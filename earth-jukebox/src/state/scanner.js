@@ -2,6 +2,8 @@ import { useSyncExternalStore } from 'react';
 import { ANOMALIES } from '../data/anomalies.js';
 import { onduloscope } from '../audio/onduloscope.js';
 import { telemetry } from './telemetry.js';
+import { ambient } from '../audio/ambient.js';
+import * as retro from '../audio/retro.js';
 
 // Lectura del escáner que <Scanner> escribe cada frame. Igual que telemetry:
 // estado mutable que el HUD y los marcadores leen sin re-renders de React.
@@ -29,6 +31,24 @@ export const scan = {
 // recargar la página.
 const STORAGE_KEY = 'jukebox-terrestre:identificadas';
 const MISSIONS_KEY = 'jukebox-terrestre:misiones';
+const AUTH_KEY = 'jukebox-terrestre:autorizado'; // protocolo de seguridad ya superado
+
+function wasAuthorized() {
+  try {
+    return localStorage.getItem(AUTH_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function rememberAuthorization(granted) {
+  try {
+    if (granted) localStorage.setItem(AUTH_KEY, '1');
+    else localStorage.removeItem(AUTH_KEY);
+  } catch {
+    // sin almacenamiento: el protocolo se repetirá en la próxima visita
+  }
+}
 
 function loadProgress(key) {
   try {
@@ -48,7 +68,10 @@ function saveProgress(key, ids) {
 }
 
 // Estado discreto (cambia pocas veces): sí pasa por React.
-let state = { active: false, audio: true, identified: loadProgress(STORAGE_KEY), missions: loadProgress(MISSIONS_KEY), openId: null, museum: false, booted: false };
+let state = { active: false, audio: true, identified: loadProgress(STORAGE_KEY), missions: loadProgress(MISSIONS_KEY), openId: null, museum: false, hatch: false, phase: 'boot', booted: false };
+// phase: 'boot' pantalla de arranque → 'intro' despertar de ARIA → 'quiz'
+// protocolo de seguridad → 'live' cabina operativa (booted = true).
+// hatch: la escotilla del museo se está abriendo.
 const listeners = new Set();
 
 function set(patch) {
@@ -70,11 +93,28 @@ export function useScanner(selector) {
 
 export const isIdentified = (id) => state.identified.includes(id);
 // Hay algo encima de la cabina: la pantalla de arranque, la estación o el museo.
-export const isPanelOpen = () => !state.booted || state.openId !== null || state.museum;
+export const isPanelOpen = () => !state.booted || state.openId !== null || state.museum || state.hatch;
 
-// Fin de la pantalla de arranque: la cabina queda operativa.
+// Fin de la pantalla de arranque. La primera vez sigue el despertar de ARIA y
+// el protocolo de seguridad; si ya se superó en una visita anterior, la
+// cabina queda operativa directamente.
 export function boot() {
-  if (!state.booted) set({ booted: true });
+  if (state.phase !== 'boot') return;
+  ambient.start();
+  retro.unlock();
+  set(wasAuthorized() ? { phase: 'live', booted: true } : { phase: 'intro' });
+}
+
+// Del mensaje de ARIA al protocolo de seguridad en la consola.
+export function startProtocol() {
+  if (state.phase === 'intro') set({ phase: 'quiz' });
+}
+
+// Protocolo superado: se enciende la cabina y se activa el módulo del escáner.
+export function authorize() {
+  if (state.phase === 'live') return;
+  rememberAuthorization(true);
+  set({ phase: 'live', booted: true });
 }
 
 // Llamar siempre desde un gesto del usuario: arranca el audio.
@@ -123,6 +163,17 @@ export function closeMuseum() {
   if (state.museum) set({ museum: false });
 }
 
+// "Abrir museo" desde la cabina: primero la cinemática de la escotilla
+// (<HatchCinematic>), que al terminar llama a openMuseum().
+export function enterMuseum() {
+  if (!state.booted || state.museum || state.hatch || state.openId) return;
+  set({ hatch: true });
+}
+
+export function finishHatch() {
+  if (state.hatch) set({ hatch: false });
+}
+
 // Esc: cierra lo que esté más arriba.
 export function closeOverlay() {
   if (state.openId) closePanel();
@@ -145,6 +196,7 @@ export function resetProgress() {
   scan.dwell = 0;
   saveProgress(STORAGE_KEY, []);
   saveProgress(MISSIONS_KEY, []);
+  rememberAuthorization(false); // en la próxima visita, ARIA vuelve a pedir autorización
   set({ identified: [], missions: [] });
 }
 
@@ -153,5 +205,5 @@ export function resetProgress() {
 export function primaryAction() {
   if (scan.pending) identify(ANOMALIES[scan.target].id);
   else if (scan.focus >= 0) openPanel(ANOMALIES[scan.focus].id);
-  else if (telemetry.onHatch) openMuseum();
+  else if (telemetry.onHatch) enterMuseum();
 }

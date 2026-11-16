@@ -6,6 +6,7 @@
 // lat/lon es dónde se esconde la señal sobre el globo: una elección de diseño
 // inspirada en lo que muestra cada visualización, no un dato del SVS.
 // `region` es ese mismo lugar dicho en llano: lo usa ARIA al dar una pista.
+// `context` explica en una línea por qué la señal está ahí (se ve en la estación).
 // `signal` es la voz del onduloscopio (ver src/audio/voices.js): cada misión
 // tiene una frecuencia base única y una textura propia de su categoría.
 // La estación de análisis del Pilar 2 lee su configuración de datasets.js.
@@ -37,6 +38,7 @@ export const ANOMALIES = [
     lat: 39.0, lon: -76.9,
     place: 'NASA Goddard (Maryland), sede del SVS',
     region: 'la costa este de Norteamérica',
+    context: 'NASA Goddard, en Maryland, es la sede del estudio que creó esta sonificación; el cúmulo en sí está a unos 40 000 años luz.',
     summary:
       'Un barrido recorre la imagen del cúmulo globular Caldwell 73 (NGC 1851), a unos 40 000 años luz: cuanto más lejos del centro está una estrella, más agudo suena. No es un dato terrestre, sino la referencia de cómo se convierte un dato en sonido.',
     signal: { kind: 'tone', hz: 440 },
@@ -55,6 +57,7 @@ export const ANOMALIES = [
     lat: 28.6, lon: 77.2,
     place: 'Llanura indogangética (India)',
     region: 'el norte de la India',
+    context: 'La llanura del Ganges, en el norte de la India, es una de las regiones del mundo donde más ha crecido la luz nocturna desde 2012.',
     summary:
       'Promedios anuales de luz nocturna de 2012 a 2023: en morado donde la luz aumentó y en naranja donde disminuyó, con acercamientos a India, Ucrania, Europa occidental y el Mediterráneo oriental.',
     signal: { kind: 'chime', hz: 660, seed: 5313 },
@@ -73,6 +76,7 @@ export const ANOMALIES = [
     lat: -38.0, lon: 22.0,
     place: 'Corriente de Agulhas',
     region: 'el extremo sur de África, mar adentro',
+    context: 'Frente al sur de África corre la corriente de Agulhas, una de las más rápidas y cálidas del planeta, que se pliega sobre sí misma en grandes remolinos.',
     summary:
       'Los flujos de las corrientes superficiales, coloreados según la temperatura del mar en cada punto, entre marzo de 2007 y marzo de 2008.',
     signal: { kind: 'swell', hz: 110, rate: 0.19 },
@@ -91,6 +95,7 @@ export const ANOMALIES = [
     lat: 35.0, lon: 142.0,
     place: 'Corriente de Kuroshio',
     region: 'el Pacífico, frente a Japón',
+    context: 'Frente a Japón corre la Kuroshio, la gran corriente de frontera occidental del Pacífico, gemela de la del Golfo en el Atlántico.',
     summary:
       'Partículas virtuales arrastradas por el campo de velocidad 3D del océano dibujan las corrientes de frontera occidental: Kuroshio, Agulhas y la corriente del Golfo.',
     signal: { kind: 'swell', hz: 146.83, rate: 0.33, drift: 35 },
@@ -109,6 +114,7 @@ export const ANOMALIES = [
     lat: 18.0, lon: -25.0,
     place: 'Pluma de polvo del Sahara sobre el Atlántico',
     region: 'el Atlántico, frente a la costa del Sahara',
+    context: 'Por aquí, sobre el Atlántico, pasa la pluma de polvo que el viento arranca del Sahara y lleva hasta América.',
     summary:
       'Sal marina, polvo, humo y sulfatos modelados para el 19 de agosto de 2025: polvo sahariano cruzando el Atlántico, sulfatos volcánicos del Kilauea y el Etna, y humo de incendios.',
     signal: { kind: 'breath', hz: 880, rate: 0.23 },
@@ -127,6 +133,7 @@ export const ANOMALIES = [
     lat: 52.9, lon: -118.1,
     place: 'Oeste de Norteamérica, temporada de incendios 2024',
     region: 'el oeste de Canadá',
+    context: 'El oeste de Canadá fue uno de los focos de los grandes incendios de 2024, cuyo humo recorre toda la simulación.',
     summary:
       'Monóxido de carbono, partículas finas (PM2.5), ozono y óxidos de nitrógeno moviéndose por la atmósfera en julio y agosto de 2024, una temporada de incendios muy activa en Norteamérica.',
     signal: { kind: 'drone', hz: 98, rate: 0.11 },
@@ -145,6 +152,7 @@ export const ANOMALIES = [
     lat: 19.5, lon: -155.6,
     place: 'Mauna Loa (Hawái)',
     region: 'Hawái, en mitad del Pacífico',
+    context: 'En el observatorio de Mauna Loa, en Hawái, se mide el CO₂ del aire sin interrupción desde 1958.',
     summary:
       'Concentraciones simuladas de CO₂ de enero a marzo de 2020: los penachos de centrales eléctricas, incendios y ciudades se reparten con el viento por continentes y océanos.',
     signal: { kind: 'chord', hz: 73.42, rate: 0.13 },
@@ -163,6 +171,7 @@ export const ANOMALIES = [
     lat: 32.0, lon: -140.0,
     place: 'Pacífico nororiental',
     region: 'el Pacífico, entre Hawái y California',
+    context: 'Sobre el Pacífico nororiental se forman los ríos atmosféricos que descargan en la costa oeste de Norteamérica.',
     summary:
       'Vapor de agua en tres dimensiones: humedad tropical de la zona de convergencia intertropical que se une a otras fuentes y forma un río atmosférico rumbo a la costa oeste de Estados Unidos.',
     signal: { kind: 'flow', hz: 196, period: 6 },
@@ -181,6 +190,7 @@ export const ANOMALIES = [
     lat: -3.0, lon: -60.0,
     place: 'Amazonia',
     region: 'la Amazonia',
+    context: 'La Amazonia es la mayor selva tropical del mundo y una de las mayores reservas de carbono en pie.',
     summary:
       'Altura global del dosel forestal medida con lidar: la vegetación baja en marrón y verde oscuro, la más alta en verde brillante y blanco.',
     signal: { kind: 'steps', hz: 261.63, scale: [0, 3, 7, 10, 14, 10, 7, 3], step: 0.18, decay: 0.11 },
@@ -199,6 +209,7 @@ export const ANOMALIES = [
     lat: -1.5, lon: 24.0,
     place: 'Cuenca del Congo, máxima actividad eléctrica del planeta',
     region: 'la cuenca del Congo, en África central',
+    context: 'África central concentra el calor y la humedad ideales para las tormentas más eléctricas del planeta.',
     summary:
       'Cada rayo que el sensor LIS registró desde la Estación Espacial entre enero de 2017 y julio de 2023, mostrado con una ventana móvil de 10 días: los trópicos de África, América y el sudeste asiático concentran las descargas.',
     signal: { kind: 'pulses', hz: 523.25, pattern: 'X..x.X...xX.....', step: 0.085, decay: 0.03, spark: 0.5 },

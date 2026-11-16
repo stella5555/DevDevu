@@ -5,7 +5,7 @@ import { closePanel, completeMission, useScanner } from '../state/scanner.js';
 import { sonifier, SLOT_COLORS, DEFAULT_MIX } from '../audio/jukebox.js';
 import { STEPS, loadSource, createAnalyzer, normalized, normalizedFlux, sampleAt, layerStats, describeStrip } from '../jukebox/analysis.js';
 import { createMission } from '../jukebox/missions.js';
-import Histogram from './jukebox/Histogram.jsx';
+import DatasetChart from './jukebox/DatasetChart.jsx';
 import Mixer from './jukebox/Mixer.jsx';
 import MissionCard from './jukebox/MissionCard.jsx';
 
@@ -18,6 +18,7 @@ const ANALYSIS_MS = 100;
 const RING_MS = 850;
 const SCAN_COLOR = '89, 255, 200';
 const percent = (value, digits = 0) => `${(value * 100).toFixed(digits)} %`;
+const coordinate = (value, positive, negative) => `${Math.abs(value).toFixed(1)}°${value >= 0 ? positive : negative}`;
 
 // Punto de la imagen (u, v en 0..1) que corresponde a una franja y a una
 // posición a lo largo de ella.
@@ -89,13 +90,14 @@ export default function AnalyticsJukebox({ anomaly }) {
   const [mix, setMix] = useState(() => DEFAULT_MIX.map((volume) => ({ volume, mute: false, solo: false })));
   const [isolated, setIsolated] = useState(-1);
   const [reading, setReading] = useState(false);
+  const [advanced, setAdvanced] = useState(false); // consola multipista, métricas y gráfica, a la vista
   const [frozen, setFrozen] = useState(false); // vídeo en pausa a petición del jugador
   const [view, setView] = useState({ done: [], hint: '' }); // lo que muestra la tarjeta de misión
 
   const panel = useRef();
   const close = useRef();
   const viewer = useRef();
-  const histogram = useRef();
+  const chart = useRef();
   const meters = useRef([]);
   const gauges = useRef([]);
   const live = useRef();
@@ -242,6 +244,7 @@ export default function AnalyticsJukebox({ anomaly }) {
     let id;
     let last = performance.now();
     let lastStep = -1;
+    let fresh = false; // hay una lectura nueva del vídeo que la gráfica aún no ha visto
     let isoCanvas = null;
 
     const tick = (now) => {
@@ -270,7 +273,8 @@ export default function AnalyticsJukebox({ anomaly }) {
         state.dirty = false;
         analyzer.update(source.el);
         isoCanvas = focused >= 0 ? analyzer.renderIsolated(focused) : null;
-        if (analysis.frame % 3 === 0) lastStep = -1; // refresca métricas e histograma aunque el barrido esté quieto
+        fresh = true;
+        lastStep = -1; // refresca métricas y gráfica aunque el barrido esté quieto
       }
       if (focused < 0) isoCanvas = null;
 
@@ -335,7 +339,8 @@ export default function AnalyticsJukebox({ anomaly }) {
         drawRings(g, W, H, dpr, state.rings, now);
       }
 
-      // Métricas, medidores, histograma y lectura: al entrar en una franja nueva.
+      // Métricas, medidores, gráfica y lectura: al entrar en una franja nueva
+      // o al llegar una lectura nueva del vídeo.
       if (step === lastStep) return;
       lastStep = step;
       const o = out.current;
@@ -351,7 +356,8 @@ export default function AnalyticsJukebox({ anomaly }) {
         const level = layer.role === 'perc' ? Math.max(normalized(analysis, k, s.v[k]), normalizedFlux(analysis, k, s.flux[k])) : normalized(analysis, k, s.v[k]);
         if (meters.current[k]) meters.current[k].style.width = `${level * 100}%`;
       });
-      histogram.current?.update(analysis.hist, s.v[lead], analysis.w * analysis.h);
+      chart.current?.update({ analysis, strip: s, step, progress, lead, mission, layers, fresh });
+      fresh = false;
       // El texto en vivo cambia 8 veces por barrido: suficiente para seguirlo
       // sin saturar a un lector de pantalla.
       if (live.current && step % (STEPS / 8) === 0) live.current.textContent = describeStrip(analysis, step, layers);
@@ -541,7 +547,6 @@ export default function AnalyticsJukebox({ anomaly }) {
               </p>
             </div>
 
-            <Histogram ref={histogram} layers={layers} />
           </div>
 
           <div className="station-col">
@@ -556,6 +561,31 @@ export default function AnalyticsJukebox({ anomaly }) {
               />
             )}
 
+
+
+            <section className="context" aria-label="Contexto de la señal">
+              <h3>Contexto de la señal</h3>
+              <p>{anomaly.context}</p>
+              <p className="station-id">
+                {anomaly.place} · {coordinate(anomaly.lat, 'N', 'S')}, {coordinate(anomaly.lon, 'E', 'O')}
+              </p>
+            </section>
+
+            <button type="button" className="btn telemetry-toggle" aria-expanded={advanced} aria-controls="telemetry" onClick={() => setAdvanced(!advanced)}>
+              {advanced ? 'Ocultar telemetría avanzada ▴' : 'Ver telemetría avanzada ▾'}
+            </button>
+
+            <a className="btn station-link" href={anomaly.url} target="_blank" rel="noreferrer">
+              Ver la visualización en svs.gsfc.nasa.gov/{anomaly.svsId} ↗
+            </a>
+          </div>
+        </div>
+
+        <div id="telemetry" className="telemetry" hidden={!advanced}>
+          <div className="station-col">
+            <DatasetChart ref={chart} config={config} layers={layers} source={source} />
+          </div>
+          <div className="station-col">
             <Mixer layers={layers} mix={mix} onChange={setTrack} meterRef={(i, el) => (meters.current[i] = el)} />
 
             <section className="metrics" aria-label="Métricas de la franja actual">
@@ -590,10 +620,6 @@ export default function AnalyticsJukebox({ anomaly }) {
                 Fotograma completo: <span ref={(el) => (out.current.whole = el)}>—</span>
               </p>
             </section>
-
-            <a className="btn station-link" href={anomaly.url} target="_blank" rel="noreferrer">
-              Ver la visualización en svs.gsfc.nasa.gov/{anomaly.svsId} ↗
-            </a>
           </div>
         </div>
       </section>

@@ -1,8 +1,10 @@
-import { useMemo } from 'react';
+import { Suspense, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { scopeVertex, scopeFragment } from '../shaders/earth.js';
 import { scan } from '../state/scanner.js';
 import Hatch from './Hatch.jsx';
+import ConsoleDeck from './ConsoleDeck.jsx';
+import { WallFrames, ConsoleLogo } from './CabinDecor.jsx';
 
 // La cámara vive en el origen mirando hacia -Z. La ventana frontal está en z = -2.
 const HULL = { color: '#161b26', roughness: 0.7, metalness: 0.4 };
@@ -80,7 +82,17 @@ export default function Cockpit() {
         <Panel size={[3.9, 0.5, 1.0]} mat={TRIM} />
         <Scope />
         <Indicators />
+        {/* Botones de colores y holograma del protocolo de seguridad */}
+        <ConsoleDeck />
+        <Suspense fallback={null}>
+          <ConsoleLogo />
+        </Suspense>
       </group>
+
+      {/* Fotos enmarcadas en los mamparos laterales */}
+      <Suspense fallback={null}>
+        <WallFrames />
+      </Suspense>
 
       <Hatch />
 

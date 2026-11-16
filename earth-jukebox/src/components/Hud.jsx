@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { ANOMALIES } from '../data/anomalies.js';
 import { telemetry } from '../state/telemetry.js';
-import { scan, useScanner, toggleScanner, primaryAction, openMuseum } from '../state/scanner.js';
+import { scan, useScanner, toggleScanner, primaryAction, enterMuseum } from '../state/scanner.js';
 import Oscilloscope from './Oscilloscope.jsx';
 import SignalLog from './SignalLog.jsx';
 import AnalyticsJukebox from './AnalyticsJukebox.jsx';
@@ -156,7 +156,7 @@ export default function Hud() {
             <button type="button" className="btn btn-scan" aria-pressed={active} onClick={toggleScanner}>
               {active ? 'Apagar escáner' : 'Activar escáner'} <kbd>Espacio</kbd>
             </button>
-            <button type="button" className="btn btn-museum" onClick={openMuseum}>
+            <button type="button" className="btn btn-museum" onClick={enterMuseum}>
               Museo · Red Terrestre <b>★ {missions.length}/{ANOMALIES.length}</b>
             </button>
             <div className="orbit" role="group" aria-label="Girar la órbita">

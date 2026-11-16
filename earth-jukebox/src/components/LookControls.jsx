@@ -28,6 +28,7 @@ export default function LookControls() {
     el.style.cursor = 'grab';
 
     const down = (e) => {
+      st.auto = 0; // el piloto retoma el control de la mirada
       st.drag = true;
       st.x = e.clientX;
       st.y = e.clientY;
@@ -82,6 +83,15 @@ export default function LookControls() {
 
   useFrame((_, dt) => {
     const st = s.current;
+    // Mirada pedida por la cinemática: a la consola o, media vuelta, a la
+    // escotilla (por el lado más corto). `slow` la hace pausada.
+    if (telemetry.look) {
+      const { yaw, pitch, slow } = telemetry.look;
+      telemetry.look = null;
+      st.tYaw = yaw === 'back' ? (st.yaw < 0 ? -YAW_LIMIT : YAW_LIMIT) : yaw;
+      st.tPitch = pitch;
+      st.auto = slow ? 2.6 : 0;
+    }
     const k = st.keys;
     const kx = (k.ArrowLeft || k.KeyA ? 1 : 0) - (k.ArrowRight || k.KeyD ? 1 : 0);
     const ky = (k.ArrowUp || k.KeyW ? 1 : 0) - (k.ArrowDown || k.KeyS ? 1 : 0);
@@ -91,7 +101,9 @@ export default function LookControls() {
     st.tYaw = THREE.MathUtils.clamp(st.tYaw, -YAW_LIMIT, YAW_LIMIT);
     st.tPitch = THREE.MathUtils.clamp(st.tPitch, -PITCH_LIMIT, PITCH_LIMIT);
 
-    const ease = 1 - Math.exp(-dt * 10);
+    if (kx || ky) st.auto = 0;
+    const ease = 1 - Math.exp(-dt * (st.auto || 10));
+    if (st.auto && Math.abs(st.tYaw - st.yaw) < 0.02 && Math.abs(st.tPitch - st.pitch) < 0.02) st.auto = 0;
     st.yaw += (st.tYaw - st.yaw) * ease;
     st.pitch += (st.tPitch - st.pitch) * ease;
     camera.rotation.set(st.pitch, st.yaw, 0, 'YXZ');

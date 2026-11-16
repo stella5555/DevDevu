@@ -12,4 +12,7 @@ export const telemetry = {
   orbitKeys: 0,
   orbitButton: 0,
   onHatch: false, // la mira está sobre la escotilla del museo
+  // Petición de mirada: { yaw, pitch, slow }. yaw en radianes o 'back' (media
+  // vuelta, hacia la escotilla). LookControls la atiende y la borra.
+  look: null,
 };

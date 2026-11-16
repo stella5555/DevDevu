@@ -16,6 +16,7 @@
 //             es una lectura de los colores de la visualización —según la
 //             leyenda oficial del SVS cuando existe—, no del dato científico.
 //                 match(r, g, b, luma, borde, u, v, lumaDeReferencia)
+//   chart     la gráfica propia del dataset (jukebox/charts.js).
 //   mission   la mecánica propia de la estación (jukebox/missions.js).
 
 const MAJOR_PENTATONIC = [0, 2, 4, 7, 9];
@@ -50,6 +51,7 @@ export const DATASETS = {
       { icon: '✨', name: 'Núcleo del cúmulo', role: 'pad', line: 'El centro, donde las estrellas están tan juntas que se funden en un resplandor blanco.', match: (r, g, b, l, e, u, v) => ramp(l, 110, 220) * (1 - ramp(fromCenter(u, v), 0.1, 0.3)) },
       { icon: '💫', name: 'Estrellas brillantes aisladas', role: 'perc', line: 'Las estrellas más luminosas fuera del núcleo: cada una es un destello.', match: (r, g, b, l, e, u, v) => ramp(l, 170, 250) * ramp(fromCenter(u, v), 0.15, 0.3) },
     ],
+    chart: { kind: 'radial', title: 'Regla de la NASA: distancia al centro → frecuencia' },
     mission: {
       kind: 'calibrate',
       title: 'Calibrar el onduloscopio',
@@ -72,6 +74,7 @@ export const DATASETS = {
       { icon: '💡', name: 'Red urbana estable', role: 'pad', line: 'Luz que ya brillaba en 2012 y sigue ahí.', match: (r, g, b, l, e, u, v, ref) => ramp(Math.min(l, ref), 18, 60) },
       { icon: '⚡', name: 'Picos de consumo', role: 'perc', line: 'Los núcleos más brillantes: las grandes áreas metropolitanas.', match: (r, g, b, l) => ramp(l, 60, 130) },
     ],
+    chart: { kind: 'timeline', title: 'Evolución de la luz nocturna · 2012 → 2023', years: [2012, 2023], span: 6.5 },
     mission: {
       kind: 'timeTravel',
       title: 'Viaje en el tiempo (2012 ↔ 2023)',
@@ -96,6 +99,7 @@ export const DATASETS = {
       { icon: '❄️', name: 'Masa fría profunda', role: 'pad', line: 'Agua fría de latitudes altas: los azules oscuros.', match: (r, g, b) => ramp(b - r, 20, 120) },
       { icon: '⚡', name: 'Remolinos de frontera', role: 'perc', line: 'Bordes nítidos entre aguas distintas: frentes y remolinos.', match: (r, g, b, l, e) => ramp(e, 60, 200) * ramp(sat(r, g, b), 25, 60) },
     ],
+    chart: { kind: 'profile', title: 'Perfil térmico norte–sur', global: true, warm: 0, flow: 1 },
     mission: {
       kind: 'buoy',
       title: 'Boya sonora en el flujo oceánico',
@@ -118,6 +122,7 @@ export const DATASETS = {
       { icon: '❄️', name: 'Masa fría profunda', role: 'pad', line: 'El agua fría y lenta que rodea la corriente: los azules.', match: (r, g, b) => ramp(b - r, 25, 90) },
       { icon: '⚡', name: 'Remolinos de frontera', role: 'perc', line: 'Donde la corriente cálida se desprende en anillos y choca con el agua fría.', match: (r, g, b, l, e) => ramp(e, 40, 140) * ramp(r - g, 10, 40) },
     ],
+    chart: { kind: 'profile', title: 'Perfil térmico norte–sur del encuadre', global: false, warm: 0, flow: 1 },
     mission: {
       kind: 'buoy',
       title: 'Boya sonora en la corriente del Golfo',
@@ -140,6 +145,7 @@ export const DATASETS = {
       { icon: '🌊', name: 'Sal marina', role: 'pad', line: 'Gris azulado en la leyenda del SVS: gotas de mar que arrancan los temporales.', match: (r, g, b, l) => ramp(l, 70, 190) * (1 - ramp(sat(r, g, b), 35, 90)) },
       { icon: '🌋', name: 'Sulfatos (volcanes e industria)', role: 'perc', line: 'Verde en la leyenda del SVS: partículas de azufre de volcanes y combustibles.', match: (r, g, b) => ramp(g - Math.max(r, b), 30, 130) },
     ],
+    chart: { kind: 'composition', title: 'Composición del aire · mapa frente a franja' },
     mission: {
       kind: 'separate',
       title: 'Separar los 4 contaminantes',
@@ -162,6 +168,7 @@ export const DATASETS = {
       { icon: '🌫️', name: 'CO y partículas de fondo', role: 'pad', line: 'Los gajos dorado y crema: monóxido de carbono y PM2.5 lejos de los focos.', match: (r, g, b) => ramp(Math.min(r, g) - b, 30, 110) * (1 - ramp(r - g, 50, 110)) },
       { icon: '☀️', name: 'Ozono', role: 'perc', line: 'El gajo violeta: ozono cerca de la superficie.', match: (r, g, b) => ramp(Math.min(r, b) - g, 15, 80) },
     ],
+    chart: { kind: 'composition', title: 'Composición del aire · mapa frente a franja' },
     mission: {
       kind: 'separate',
       title: 'Separar los 4 contaminantes',
@@ -184,6 +191,7 @@ export const DATASETS = {
       { icon: '🌬️', name: 'CO₂ en transporte', role: 'pad', line: 'Velo anaranjado tenue: gas ya diluido que el viento reparte lejos de su origen.', match: (r, g, b) => ramp(r - b, 14, 50) * (1 - ramp(r - b, 60, 110)) },
       { icon: '⚠️', name: 'Frente de saturación', role: 'perc', line: 'Los núcleos más brillantes de la pluma.', match: (r, g, b, l) => ramp(r - b, 85, 145) * ramp(l, 85, 150) },
     ],
+    chart: { kind: 'series', title: 'Monitor de saturación de CO₂', key: 0 },
     mission: {
       kind: 'probe',
       title: 'Alerta de presión climática',
@@ -207,6 +215,7 @@ export const DATASETS = {
       { icon: '💧', name: 'Río de vapor denso', role: 'pad', line: 'Azul intenso: el corredor de vapor de agua, el río atmosférico.', match: (r, g, b) => ramp(b - r, 60, 120) * ramp(b, 160, 225) },
       { icon: '⚠️', name: 'Frente de saturación', role: 'perc', line: 'La costa y sus montañas: el relieve que obliga al vapor a subir y descargar.', match: (r, g, b, l, e) => ramp(Math.min(r, g) - b, 25, 90) * ramp(e, 30, 120) },
     ],
+    chart: { kind: 'series', title: 'Monitor de saturación de vapor', key: 2 },
     mission: {
       kind: 'probe',
       title: 'Alerta de presión climática',
@@ -230,6 +239,7 @@ export const DATASETS = {
       { icon: '🌲', name: 'Bosque denso medio', role: 'pad', line: 'Verdes medios: bosque de entre 20 y 40 m.', match: (r, g, b, l) => ramp(gediHeight(r, g, b, l), 0.36, 0.44) * (1 - ramp(gediHeight(r, g, b, l), 0.66, 0.8)) },
       { icon: '🪵', name: 'Biomasa total', role: 'perc', line: 'Toda la vegetación, pesando más cuanto más alta es.', match: (r, g, b, l) => gediHeight(r, g, b, l) },
     ],
+    chart: { kind: 'canopy', title: 'Altura del dosel a lo largo del barrido (0–50 m)', biomass: 3, land: [0, 1, 2] },
     mission: {
       kind: 'canopy',
       title: 'Perfil de elevación del Amazonas',
@@ -252,6 +262,7 @@ export const DATASETS = {
       { icon: '🌧️', name: 'Frente de nubes (CPC)', role: 'pad', line: 'El compuesto de nubes del CPC, en gris claro bajo los rayos.', match: (r, g, b, l) => ramp(l, 52, 105) * (1 - ramp(sat(r, g, b), 25, 60)) },
       { icon: '💥', name: 'Ráfagas extremas (LIS)', role: 'perc', line: 'Los puntos más brillantes: cúmulos de descargas muy seguidas.', match: (r, g, b, l) => rayo(r, g, b) * ramp(l, 105, 175) },
     ],
+    chart: { kind: 'series', title: 'Monitor de descargas eléctricas', key: 1, flash: [0, 1] },
     mission: {
       kind: 'stormHunter',
       title: 'Cazador de tormentas',
