@@ -1,84 +1,69 @@
-# 🌍 Earth Information Jukebox: Sinfonía Orbital
+
 
 [![React](https://img.shields.io/badge/React-18.3-blue.svg)](https://reactjs.org/)
 [![Three.js](https://img.shields.io/badge/Three.js-R3F-black.svg)](https://threejs.org/)
 [![Tone.js](https://img.shields.io/badge/Tone.js-Web_Audio-ff69b4.svg)](https://tonejs.github.io/)
 [![NASA SVS](https://img.shields.io/badge/NASA-SVS_Data-0b3d91.svg)](https://svs.gsfc.nasa.gov/)
 
-> **NASA Space Apps Challenge 2026** | **Reto:** Earth Information Jukebox
+> **NASA Space Apps Challenge 2026** | Earth Information Jukebox
 > 
-> *Transformando volúmenes masivos de datos satelitales densos en un misterio interactivo, musical y gamificado.*
-
-![Pantalla de Carga](docs/boot-screen.png) 
-*Pantalla de inicialización de sistemas y precarga de texturas satelitales.*
-
-## Resumen del Proyecto
-El sistema terrestre es complejo y sus datos son incomprensibles para el público general. **Earth Information Jukebox** es una experiencia web interactiva en 3D que traduce la ciencia satelital del *Scientific Visualization Studio* (SVS) de la NASA a un idioma universal: **el sonido**. 
-
-A bordo de una cabina orbital y guiados por la inteligencia artificial ARIA, los jugadores escanean la Tierra para triangular firmas climáticas. Procesamos los píxeles de videos `.mp4` de la NASA en tiempo real mediante *Computer Vision* y *Web Audio API*, separando los datos científicos en pistas musicales (Bajo, Melodía, Arpegio y Percusión). No solo lees el cambio climático, lo juegas y lo escuchas.
+> *Transforming massive volumes of dense satellite data into an interactive, musical, and gamified mystery.*
+> 
+## Summary
+The Earth system is complex, and its data can be incomprehensible to the general public. **Earth Information Jukebox** is an interactive 3D web experience that translates satellite science from NASA’s *Scientific Visualization Studio* (SVS) into a universal language: **sound**.
+With a orbital cockpit-guided by an AI named ARIA, players scan the earth to traingulate climate signatures. We process pixels from NASA videos in real time using computer vision and the web audio API, breaking down scientific data into musical tracks (bass, melody, arpeggio, and percussion). You don't just read about climate change, you play and hear it.
 
 ---
 
-## 🎮 Experiencia de Usuario (Los 3 Pilares)
+## User experience
 
-### 1. La Cabina Orbital y el Onduloscopio
-Los jugadores inician en una cabina 3D inmersiva. Usando controles geométricos y un osciloscopio central interactivo, deben girar la órbita y rastrear señales escondidas sobre la superficie de la Tierra (desde incendios en Norteamérica hasta superceldas eléctricas en el Congo).
+*The Orbital Cabin and the Unduloscope*
 
-### 2. Estación Analítica ("Analytics Jukebox")
-Al atrapar una señal, se despliega una interfaz de análisis científico profundo.
-* **Procesamiento de Video en Vivo:** Leemos el color y luminosidad de los datos del SVS en tiempo real.
-* **Consola Multipista:** Aísla variables como "Humo de Incendios" o "Polvo del Sahara" silenciando o aumentando su volumen.
-* **Gráficas Específicas:** Histogramas logarítmicos, perfiles térmicos latitudinales y curvas temporales generadas dinámicamente con `<canvas>`.
-* **Micro-Misiones:** Pequeños retos (ej. lanzar una boya sonora en la corriente del Golfo) para ganar estrellas (★) de descubrimiento.
+Players begin inside an immersive 3D cockpit. Using geometric controls and an interactive central oscilloscope, they must rotate the orbit and track signals hidden across the Earth’s surface—ranging from fires in North America to electrical supercells in the Congo.
 
-![Estación Analítica](docs/analytics-panel.png)
-*Estación analítica analizando simulaciones del modelo GEOS-CF (Calidad del Aire), con la asistente ARIA activa y la consola multipista aislando 4 tipos de contaminantes.*
+ *Analytics Station ("Analytics Jukebox")*
+ 
+Upon capturing a signal, an interface for in-depth scientific analysis is displayed.
+* **Live Video Processing:** We read color and luminosity data from the SVS in real time.
+* **Multi-track Console:** Isolate variables—such as "wildfire smoke" or "Saharan dust"—by muting them or adjusting their intensity.
+* **Specialized Graphs:** Logarithmic histograms, latitudinal thermal profiles, and temporal curves, all generated dynamically using `<canvas>`.
+* **Micro-Missions:** Small challenges (e.g., deploying a sonar buoy in the Gulf Stream) to earn discovery stars (★).
 
-### 3. Museo de los Descubrimientos (Red Terrestre)
-Al reunir descubrimientos, se desbloquea una red 3D causal. Los jugadores descubren cómo la expansión urbana (Luces Nocturnas) impacta las emisiones (CO2) y altera el transporte de calor (Corrientes). Culmina en una **Sinfonía Planetaria**, donde todas las señales actúan como instrumentos en una misma progresión musical armónica.
 
+### Discoverings musseum (Earth red)
+As discoveries are gathered, a 3D causal network is unlocked. Players uncover how urban expansion (Night lights) impacts emissiones (C02) and alters heat transports (Currents) It culminates in a **Planetary symphony**, where all the signals act as instruments within  single, harmonious musical progression
 ---
 
-## 🛰️ Uso de Datos de la NASA (Scientific Visualization Studio)
+## 🛰️ Use of NASA Data (Scientific Visualization Studio)
 
-Hemos procesado e integrado **10 conjuntos de datos obligatorios** de la NASA. Para evitar problemas de CORS y garantizar una experiencia fluida de cero latencia, extrajimos los fotogramas y videos ligeros directamente de la API del SVS:
+We have processed and integrated **10 essential NASA datasets**. To avoid CORS issues and ensure a seamless, zero-latency experience, we extracted lightweight frames and videos directly from the SVS API:
 
-| ID del SVS | Fenómeno | Traducción Sonora y Gráfica |
+| SVS ID | Phenomenon | Sonic and Graphic Translation |
 | :--- | :--- | :--- |
-| **#13786** | **Caldwell 73** | Algoritmo base de calibración: Distancia al centro (Tono) y Brillo (Volumen). |
-| **#5313** | **Luces Nocturnas** | Pulsos rítmicos que se aceleran con la expansión urbana (2012-2023). |
-| **#3912 / #5425** | **Corrientes Marinas (ECCO2)** | Termodinámica mapeada a un arpegio fluido; el calor del agua dicta la calidez del sintetizador. |
-| **#5669 / #5533** | **Aerosoles y Calidad del Aire (GEOS)** | Texturas de audio separadas (Polvo, Humo, Sulfatos) que el usuario puede mezclar en vivo. |
-| **#5196 / #4960** | **CO2 Global y Ríos Atmosféricos** | Sismógrafos de tensión sonora que alertan al llegar al punto crítico de saturación. |
-| **#4950** | **Altura del Dosel Forestal (GEDI)** | Notas escalonadas estilo marimba que dibujan el perfil topográfico de la Amazonía. |
-| **#5011** | **Eventos de Rayos (Sensor LIS - ISS)** | Percusión intensa mapeada a los destellos amarillos en tiempo real sobre los continentes. |
+| **#13786** | **Caldwell 73** | Base calibration algorithm: Distance from the center (pitch) and brightness (volume). |
+| **#5313** | **Night Lights** | Rhythmic pulses that accelerate in line with urban expansion (2012–2023). |
+| **#3912 / #5425** | **Ocean Currents (ECCO2)** | Thermodynamics mapped to a fluid arpeggio; water temperature dictates the warmth of the synthesizer. |
+| **#5669 / #5533** | **Aerosols and Air Quality (GEOS)** | Distinct audio textures (dust, smoke, sulfates) that the user can mix in real time. |
+| **#5196 / #4960** | **Global CO2 and Atmospheric Rivers** | Sonic-tension "seismographs" that trigger alerts upon reaching critical saturation points. |
+| **#4950** | **Forest Canopy Height (GEDI)** | Marimba-style, stepped notes that trace the topographic profile of the Amazon. |
+| **#5011** | **Lightning Events (LIS Sensor – ISS)** | Intense percussion mapped to yellow flashes occurring in real time across the continents. |
 
 ---
 
-## 💻 Arquitectura Técnica
+## Deployment and Local Execution
 
-El proyecto se construyó íntegramente con tecnologías web modernas, sin motores de juego pesados, garantizando accesibilidad global directamente en el navegador:
-* **React 18 & Vite:** Arquitectura basada en componentes de alto rendimiento y gestión del estado del juego (Zustand/Context).
-* **Three.js & React Three Fiber (R3F):** Renderizado WebGL, shaders de la atmósfera terrestre y la geometría del entorno de la cabina y el museo.
-* **Tone.js & Web Audio API:** Motor de síntesis procedural. No usamos pistas pregrabadas (salvo la voz de la IA); toda la música es generada matemáticamente por la lectura de la matriz de píxeles (`getImageData`).
-* **HTML5 Canvas API:** Barrido de datos y renderizado estadístico de alta velocidad para los mapas de calor y perfiles latitudinales.
+You can try our game here: **https://stella5555.github.io/DevDevu/**
 
----
-
-## ⚙️ Despliegue y Ejecución Local
-
-Puedes probar nuestra aplicación en vivo aquí: **https://stella5555.github.io/DevDevu/**
-
-Para correr el proyecto en entorno de desarrollo:
+To run the project in a development environment:
 ```bash
-# 1. Clonar el repositorio
+# 1. Clone the repository
 git clone [https://github.com/stella5555/DevDevu.git](https://github.com/stella5555/DevDevu.git)
 
-# 2. Entrar al directorio
+# 2. Enter the directory
 cd DevDevu/earth-jukebox
 
-# 3. Instalar dependencias
+# 3. Instale dependencies
 npm install
 
-# 4. Iniciar el servidor local de desarrollo
+# 4. Start the local development server
 npm run dev
