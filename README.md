@@ -309,7 +309,7 @@ The application lives in [`earth-jukebox/`](earth-jukebox/). The HTML files in t
 
 **Typefaces.** [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk) and [JetBrains Mono](https://fonts.google.com/specimen/JetBrains+Mono), served by Google Fonts under the SIL Open Font License.
 
-**Other assets.** Earth 3D model (`earth-jukebox/public/earth.glb`), mascot animation, cabin photographs, ARIA voice recording and tutorial videos: provided by the team.
+**Other assets.** Earth 3D model (`earth-jukebox/public/earth.glb`) [NASA EARTH](https://science.nasa.gov/learn/heat/resource/earth-3d-model/), mascot animation, cabin photographs, ARIA voice recording and tutorial videos: provided by the team.
 
 **Inspiration.** *Project Hail Mary* by Andy Weir, *Outer Wilds* by Mobius Digital, and the dialogue style of *Undertale* by Toby Fox.
 
