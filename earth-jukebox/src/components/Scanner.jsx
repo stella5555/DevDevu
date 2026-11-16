@@ -28,14 +28,14 @@ const view = new THREE.Vector3();
 const toCamera = new THREE.Quaternion();
 
 const coordinate = (value, positive, negative) => `${Math.abs(value).toFixed(1)}°${value >= 0 ? positive : negative}`;
-const SIDES = ['a la derecha', 'arriba a la derecha', 'hacia arriba', 'arriba a la izquierda', 'a la izquierda', 'abajo a la izquierda', 'hacia abajo', 'abajo a la derecha'];
+const SIDES = ['to the right', 'up and to the right', 'upward', 'up and to the left', 'to the left', 'down and to the left', 'downward', 'down and to the right'];
 function latitudeWords(lat) {
-  const side = lat >= 0 ? 'norte' : 'sur';
+  const side = lat >= 0 ? 'north' : 'south';
   const size = Math.abs(lat);
-  if (size < 1.5) return 'justo sobre el ecuador';
-  if (size < 15) return `ligeramente al ${side} del ecuador`;
-  if (size < 35) return `en los subtrópicos del ${side}`;
-  return `en latitudes medias del ${side}`;
+  if (size < 1.5) return 'right on the equator';
+  if (size < 15) return `slightly ${side} of the equator`;
+  if (size < 35) return `in the ${side}ern subtropics`;
+  return `at ${side}ern mid-latitudes`;
 }
 
 export default function Scanner() {
@@ -127,22 +127,22 @@ export default function Scanner() {
         if (!best || (seen && !bestSeen) || (seen === bestSeen && (seen ? node.angle < best.angle : node.facing > best.facing))) pick = i;
       });
       if (pick < 0) {
-        say('Ya has identificado las 10 señales. Abre sus estaciones para completar las misiones ★ o visita el museo.', 'hint');
+        say('You have already identified all 10 signals. Open their stations to complete the ★ missions or visit the museum.', 'hint');
       } else {
         const a = ANOMALIES[pick];
         const node = nodes[pick];
         scan.hint.index = pick;
         scan.hint.until = now + HINT_MS;
-        const where = `${a.region}, ${latitudeWords(a.lat)} (≈ ${coordinate(a.lat, 'N', 'S')}, ${coordinate(a.lon, 'E', 'O')})`;
+        const where = `${a.region}, ${latitudeWords(a.lat)} (≈ ${coordinate(a.lat, 'N', 'S')}, ${coordinate(a.lon, 'E', 'W')})`;
         if (node.facing > HORIZON) {
           view.copy(node.dir).applyQuaternion(toCamera.copy(camera.quaternion).invert());
           const sector = Math.round(Math.atan2(view.y, view.x) / (Math.PI / 4));
           const degrees = Math.round(THREE.MathUtils.radToDeg(node.angle));
-          const move = degrees < 3 ? 'La tienes casi en la mira' : `Lleva la mira ${SIDES[(sector + 8) % 8]}, unos ${degrees}°`;
-          say(`Pista: busca en ${where}. ${move}: sigue la flecha ámbar de la retícula y el pulso sobre el globo.${scan.active ? '' : ' Activa el escáner para oírla.'}`, 'hint');
+          const move = degrees < 3 ? 'It is almost on target' : `Move the reticle ${SIDES[(sector + 8) % 8]}, about ${degrees}°`;
+          say(`Hint: look over ${where}. ${move}: follow the amber arrow on the reticle and the pulse on the globe.${scan.active ? '' : ' Turn on the scanner to hear it.'}`, 'hint');
         } else {
           const key = node.side > 0 ? 'Q' : 'E';
-          say(`Pista: la señal más próxima está en ${where}, ahora en la cara oculta. Mantén ${key} para girar la órbita hasta que asome por el borde ${key === 'Q' ? 'derecho' : 'izquierdo'}; después sigue la flecha de la retícula.`, 'hint');
+          say(`Hint: the nearest signal is over ${where}, now on the far side. Hold ${key} to rotate the orbit until it appears at the ${key === 'Q' ? 'right' : 'left'} edge; then follow the arrow on the reticle.`, 'hint');
         }
       }
     }

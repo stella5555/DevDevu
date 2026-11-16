@@ -213,7 +213,7 @@ function Node({ anomaly, known, starred, selected, onSelect }) {
   const Craft = CRAFT[info.craft];
   const poster = usePoster(anomaly.svsId);
   const color = starred ? GOLD : known ? CATEGORIES[anomaly.category].color : LOCKED;
-  const label = useLabel(known ? `${anomaly.short}${starred ? ' ★' : ''}` : 'Sin identificar', known ? '#eafff8' : '#7f8fa8');
+  const label = useLabel(known ? `${anomaly.short}${starred ? ' ★' : ''}` : 'Unidentified', known ? '#eafff8' : '#7f8fa8');
   const craft = useRef();
   const halo = useRef();
   const { hover, handlers } = usePointerCursor();
@@ -261,7 +261,7 @@ function Node({ anomaly, known, starred, selected, onSelect }) {
 
 function Hub({ selected, onSelect }) {
   const globe = useRef();
-  const label = useLabel('Centro de la red', '#eafff8');
+  const label = useLabel('Center of the network', '#eafff8');
   const { hover, handlers } = usePointerCursor();
   useFrame((_, dt) => {
     globe.current.rotation.y += dt * 0.12;

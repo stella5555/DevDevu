@@ -54,7 +54,7 @@ export default function HatchCinematic() {
       )}
       <div className="hatch-light" />
       <p className="sr-only" role="status">
-        Abriendo la escotilla del Museo de los Descubrimientos…
+        Opening the hatch of the Museum of Discoveries…
       </p>
     </div>
   );

@@ -30,7 +30,7 @@ function useSign(count, total) {
     g.textBaseline = 'middle';
     g.fillStyle = count ? GOLD : '#7f8fa8';
     g.font = "600 54px 'Space Grotesk', 'Segoe UI', sans-serif";
-    g.fillText('MUSEO DE LOS DESCUBRIMIENTOS', 512, 60);
+    g.fillText('MUSEUM OF DISCOVERIES', 512, 60);
     g.font = "40px 'JetBrains Mono', Consolas, monospace";
     g.fillText(`★ ${count}/${total}`, 512, 118);
     const texture = new THREE.CanvasTexture(canvas);

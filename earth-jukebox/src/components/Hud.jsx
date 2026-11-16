@@ -10,9 +10,9 @@ import DiscoveryMuseum from './DiscoveryMuseum.jsx';
 const signed = (v) => `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(1).padStart(5, '0')}°`;
 
 function surface(t) {
-  if (!t.onEarth) return 'Espacio profundo';
+  if (!t.onEarth) return 'Deep space';
   const lat = `${Math.abs(t.lat).toFixed(1)}°${t.lat >= 0 ? 'N' : 'S'}`;
-  const lon = `${Math.abs(t.lon).toFixed(1)}°${t.lon >= 0 ? 'E' : 'O'}`;
+  const lon = `${Math.abs(t.lon).toFixed(1)}°${t.lon >= 0 ? 'E' : 'W'}`;
   return `${lat}  ${lon}`;
 }
 
@@ -83,8 +83,8 @@ export default function Hud() {
       const hint = scan.hint;
       let tag = '';
       if (hint.index >= 0) {
-        if (hint.hidden) tag = `Cara oculta · mantén ${hint.hidden}`;
-        else tag = hint.degrees < 2.5 ? 'En la mira' : `${Math.round(hint.degrees)}°`;
+        if (hint.hidden) tag = `Far side · hold ${hint.hidden}`;
+        else tag = hint.degrees < 2.5 ? 'On target' : `${Math.round(hint.degrees)}°`;
         const turn = hint.hidden ? (hint.hidden === 'Q' ? 0 : Math.PI) : -hint.angle;
         hintArrow.current.style.rotate = `${turn}rad`;
       }
@@ -92,13 +92,13 @@ export default function Hud() {
         lastHint = tag;
         hintTag.current.textContent = tag;
         hintTag.current.hidden = !tag;
-        hintArrow.current.hidden = !tag || tag === 'En la mira';
+        hintArrow.current.hidden = !tag || tag === 'On target';
       }
 
       let text = '';
-      if (scan.pending) text = 'Señal clara · mantén la mira o haz clic';
-      else if (scan.focus >= 0) text = `${ANOMALIES[scan.focus].short} · abrir análisis ⏎`;
-      else if (telemetry.onHatch) text = 'Escotilla del museo · abrir ⏎';
+      if (scan.pending) text = 'Clear signal · hold the reticle or click';
+      else if (scan.focus >= 0) text = `${ANOMALIES[scan.focus].short} · open analysis ⏎`;
+      else if (telemetry.onHatch) text = 'Museum hatch · open ⏎';
       if (text !== lastPrompt) {
         lastPrompt = text;
         prompt.current.textContent = text;
@@ -116,17 +116,17 @@ export default function Hud() {
     if (e.detail > 0) e.target.closest('button')?.blur();
   };
 
-  let status = 'Cabina orbital · escáner en espera';
+  let status = 'Orbital cabin · scanner on standby';
   if (active) {
-    status = `Escáner activo · ${identified.length} de ${ANOMALIES.length} señales identificadas`;
-    if (!audio) status += ' · sin audio';
+    status = `Scanner active · ${identified.length} of ${ANOMALIES.length} signals identified`;
+    if (!audio) status += ' · no audio';
   }
 
   return (
     <div className={`hud${open || museum ? ' has-panel' : ''}`} onClick={releaseFocus}>
       <header className="hud-top">
         <div className="hud-brand">
-          <h1>Jukebox Terrestre</h1>
+          <h1>Earth Jukebox</h1>
           <p>{status}</p>
         </div>
         <SignalLog />
@@ -143,10 +143,10 @@ export default function Hud() {
 
       <footer className="hud-foot">
         <dl className="readouts">
-          <div><dt>Azimut</dt><dd ref={az}>+000.0°</dd></div>
-          <div><dt>Elevación</dt><dd ref={el}>+000.0°</dd></div>
-          <div><dt>Visor</dt><dd ref={zoom}>1.0×</dd></div>
-          <div className="wide"><dt>Bajo la mira</dt><dd ref={target}>—</dd></div>
+          <div><dt>Azimuth</dt><dd ref={az}>+000.0°</dd></div>
+          <div><dt>Elevation</dt><dd ref={el}>+000.0°</dd></div>
+          <div><dt>Zoom</dt><dd ref={zoom}>1.0×</dd></div>
+          <div className="wide"><dt>Under reticle</dt><dd ref={target}>—</dd></div>
         </dl>
 
         <Oscilloscope />
@@ -154,19 +154,19 @@ export default function Hud() {
         <div className="controls">
           <div className="buttons">
             <button type="button" className="btn btn-scan" aria-pressed={active} onClick={toggleScanner}>
-              {active ? 'Apagar escáner' : 'Activar escáner'} <kbd>Espacio</kbd>
+              {active ? 'Turn scanner off' : 'Turn scanner on'} <kbd>Space</kbd>
             </button>
             <button type="button" className="btn btn-museum" onClick={enterMuseum}>
-              Museo · Red Terrestre <b>★ {missions.length}/{ANOMALIES.length}</b>
+              Museum · Earth Network <b>★ {missions.length}/{ANOMALIES.length}</b>
             </button>
-            <div className="orbit" role="group" aria-label="Girar la órbita">
-              <OrbitButton dir={-1} label="Girar la órbita a la izquierda (Q)">◀</OrbitButton>
-              <span>Órbita</span>
-              <OrbitButton dir={1} label="Girar la órbita a la derecha (E)">▶</OrbitButton>
+            <div className="orbit" role="group" aria-label="Rotate the orbit">
+              <OrbitButton dir={-1} label="Rotate orbit left (Q)">◀</OrbitButton>
+              <span>Orbit</span>
+              <OrbitButton dir={1} label="Rotate orbit right (E)">▶</OrbitButton>
             </div>
           </div>
           <p className="hint">
-            Arrastra para mirar · rueda para acercar · flechas o WASD · Q/E giran la órbita · Enter identifica · a tu espalda, la escotilla del museo
+            Drag to look · scroll to zoom · arrows or WASD · Q/E rotate the orbit · Enter identifies · behind you, the museum hatch
           </p>
         </div>
       </footer>

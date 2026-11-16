@@ -124,13 +124,13 @@ const DatasetChart = forwardRef(function DatasetChart({ config, layers, source }
   return (
     <figure className="histogram chart">
       <figcaption>
-        <h3>{mode === 'dataset' ? spec.title : 'Histograma de fenómenos'}</h3>
-        <div className="chart-switch" role="group" aria-label="Tipo de gráfica">
+        <h3>{mode === 'dataset' ? spec.title : 'Phenomenon histogram'}</h3>
+        <div className="chart-switch" role="group" aria-label="Chart type">
           <button type="button" className="btn" aria-pressed={mode === 'dataset'} onClick={() => setMode('dataset')}>
-            Del fenómeno
+            Phenomenon
           </button>
           <button type="button" className="btn" aria-pressed={mode === 'histogram'} onClick={() => setMode('histogram')}>
-            Histograma
+            Histogram
           </button>
         </div>
       </figcaption>
@@ -144,7 +144,7 @@ const DatasetChart = forwardRef(function DatasetChart({ config, layers, source }
               ref={canvas}
               style={{ height: HEIGHT[spec.kind] ?? 132 }}
               role="img"
-              aria-label={`${spec.title}. El resumen bajo la gráfica dice lo mismo en texto.`}
+              aria-label={`${spec.title}. The summary below the chart says the same in text.`}
               onPointerMove={hover}
               onPointerLeave={() => setTip(null)}
             />

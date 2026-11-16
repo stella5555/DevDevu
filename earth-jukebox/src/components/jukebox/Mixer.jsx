@@ -1,15 +1,15 @@
 import { SLOT_COLORS } from '../../audio/jukebox.js';
 import { ROLES } from '../../data/datasets.js';
 
-// Consola multipista: una tira por fenómeno del dataset, con silencio (M),
+// Multitrack console: una tira por fenómeno del dataset, con silencio (M),
 // solo (S), volumen y un medidor de su intensidad en la franja que suena.
 // Poner una pista en solo también la aísla en el visor.
 export default function Mixer({ layers, mix, onChange, meterRef }) {
   const soloing = mix.some((m) => m.solo);
 
   return (
-    <section className="mixer" aria-label="Consola multipista">
-      <h3>Consola multipista</h3>
+    <section className="mixer" aria-label="Multitrack console">
+      <h3>Multitrack console</h3>
       <ul>
         {layers.map((layer, i) => {
           const m = mix[i];
@@ -31,8 +31,8 @@ export default function Mixer({ layers, mix, onChange, meterRef }) {
                   type="button"
                   className="btn btn-icon"
                   aria-pressed={m.mute}
-                  aria-label={`Silenciar ${layer.name}`}
-                  title="Silenciar"
+                  aria-label={`Mute ${layer.name}`}
+                  title="Mute"
                   onClick={() => onChange(i, { mute: !m.mute })}
                 >
                   M
@@ -42,7 +42,7 @@ export default function Mixer({ layers, mix, onChange, meterRef }) {
                   className="btn btn-icon"
                   aria-pressed={m.solo}
                   aria-label={`Solo ${layer.name}`}
-                  title="Solo: suena y se ve solo este fenómeno"
+                  title="Solo: only this phenomenon is heard and shown"
                   onClick={() => onChange(i, { solo: !m.solo })}
                 >
                   S
@@ -52,7 +52,7 @@ export default function Mixer({ layers, mix, onChange, meterRef }) {
                   min="0"
                   max="100"
                   value={Math.round(m.volume * 100)}
-                  aria-label={`Volumen de ${layer.name}`}
+                  aria-label={`Volume of ${layer.name}`}
                   onChange={(e) => onChange(i, { volume: e.target.value / 100 })}
                 />
               </div>

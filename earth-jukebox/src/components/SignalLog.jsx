@@ -22,9 +22,9 @@ export default function SignalLog() {
   };
 
   return (
-    <section className="signals" aria-label="Registro de señales">
+    <section className="signals" aria-label="Signal log">
       <h2>
-        Señales <span>{identified.length}/{ANOMALIES.length}</span>
+        Signals <span>{identified.length}/{ANOMALIES.length}</span>
       </h2>
       <ol>
         {ANOMALIES.map((a) =>
@@ -33,30 +33,30 @@ export default function SignalLog() {
               <button
                 type="button"
                 onClick={() => openPanel(a.id)}
-                title={`Abrir análisis: ${a.title}${missions.includes(a.id) ? ' · misión completada' : ''}`}
+                title={`Open analysis: ${a.title}${missions.includes(a.id) ? ' · mission complete' : ''}`}
               >
                 <i aria-hidden="true" />
                 <span>{a.short}</span>
-                {missions.includes(a.id) && <b aria-label="misión completada">★</b>}
+                {missions.includes(a.id) && <b aria-label="mission complete">★</b>}
               </button>
             </li>
           ) : (
             <li key={a.id} className="is-unknown">
               <i aria-hidden="true" />
-              <span>Sin identificar</span>
+              <span>Unidentified</span>
             </li>
           )
         )}
       </ol>
       {identified.length > 0 && (
         <button type="button" className={`signals-reset${confirming ? ' is-armed' : ''}`} onClick={reset}>
-          {confirming ? '¿Borrar el progreso? Confirmar' : 'Reiniciar exploración'}
+          {confirming ? 'Erase progress? Confirm' : 'Restart exploration'}
         </button>
       )}
       {/* Atajo para la evaluación: todo identificado y con ★ de un clic. */}
       {missions.length < ANOMALIES.length && (
         <button type="button" className="signals-reset" onClick={unlockAll}>
-          Modo Jurado (Desbloquear todo)
+          Jury Mode (Unlock everything)
         </button>
       )}
     </section>

@@ -31,15 +31,15 @@ export default function SecurityQuiz() {
     return () => window.removeEventListener('keydown', key);
   }, []);
 
-  let feedback = 'Responde con los botones de colores de la consola, con estos o con las teclas 1, 2 y 3.';
-  if (granted) feedback = 'Autorización confirmada. Restaurando energía: onduloscopio en línea.';
-  else if (verdict === 'wrong') feedback = `«${question.options[picked]}» no es. Inténtalo de nuevo.`;
-  else if (verdict === 'right') feedback = 'Correcto.';
+  let feedback = 'Answer with the colored buttons on the console, with these, or with keys 1, 2 and 3.';
+  if (granted) feedback = 'Authorization confirmed. Restoring power: onduloscope online.';
+  else if (verdict === 'wrong') feedback = `“${question.options[picked]}” is not it. Try again.`;
+  else if (verdict === 'right') feedback = 'Correct.';
 
   return (
-    <section className={`quiz${granted ? ' is-granted' : ''}${verdict === 'wrong' ? ' is-wrong' : ''}`} aria-label="Protocolo de seguridad">
+    <section className={`quiz${granted ? ' is-granted' : ''}${verdict === 'wrong' ? ' is-wrong' : ''}`} aria-label="Security protocol">
       <header>
-        <h2>Protocolo de seguridad</h2>
+        <h2>Security protocol</h2>
         <span>
           {granted ? QUESTIONS.length : index + 1}/{QUESTIONS.length}
         </span>
@@ -70,7 +70,7 @@ export default function SecurityQuiz() {
       </p>
       {!granted && (
         <button type="button" className="quiz-skip" onClick={skipProtocol}>
-          Modo Jurado: omitir el protocolo
+          Jury Mode: skip the protocol
         </button>
       )}
     </section>

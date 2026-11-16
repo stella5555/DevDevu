@@ -54,13 +54,13 @@ export default function Assistant() {
   // ── Mensajes de contexto ──
   useEffect(() => {
     if (!booted) return;
-    if (identified.length === total) say('Cabina encendida. Ya tienes las 10 señales: abre sus estaciones para completar las misiones ★ o visita el museo.');
-    else if (identified.length) say(`Cabina encendida. Llevas ${identified.length} de ${total} señales. Activa el escáner con Espacio para seguir buscando, o pídeme una pista.`);
-    else say('Energía restaurada: el onduloscopio vuelve a estar en línea. Activa el escáner con Espacio y pasea la mira sobre la Tierra: cuando la estática se vuelva música, hay una señal cerca.');
+    if (identified.length === total) say('Cabin powered up. You already have all 10 signals: open their stations to complete the ★ missions or visit the museum.');
+    else if (identified.length) say(`Cabin powered up. You have ${identified.length} of ${total} signals. Turn on the scanner with Space to keep searching, or ask me for a hint.`);
+    else say('Power restored: the onduloscope is back online. Turn on the scanner with Space and sweep the reticle over the Earth: when the static turns into music, a signal is near.');
   }, [booted]);
 
   useEffect(() => {
-    if (active) once('scanner', 'Escáner activo. Guíate por el medidor de señal del onduloscopio: cuanto más limpia suena la onda, más cerca estás.');
+    if (active) once('scanner', 'Scanner active. Follow the signal meter on the onduloscope: the cleaner the wave sounds, the closer you are.');
   }, [active]);
 
   useEffect(() => {
@@ -71,16 +71,16 @@ export default function Assistant() {
     before.missions = missions.length;
     if (!booted) return;
     if (gotSignals > 1 && gotStars > 1) {
-      say('Modo jurado: las 10 señales identificadas y las 10 misiones con ★. El museo y la Sinfonía Planetaria están completos.', 'win');
+      say('Jury mode: all 10 signals identified and all 10 missions with ★. The museum and the Planetary Symphony are complete.', 'win');
     } else if (gotStars > 0) {
       const left = total - missions.length;
-      say(left ? `★ Misión completada. Te quedan ${left}. La escotilla del museo brilla un poco más y la sinfonía gana un instrumento.` : '★ Las 10 misiones completadas. Ve al museo y escucha la Sinfonía Planetaria al completo.', 'win');
+      say(left ? `★ Mission complete. ${left} to go. The museum hatch glows a little brighter and the symphony gains an instrument.` : '★ All 10 missions complete. Go to the museum and listen to the full Planetary Symphony.', 'win');
     } else if (gotSignals > 0) {
       const found = byId[identified[identified.length - 1]];
       const left = total - identified.length;
-      say(`Señal identificada: ${found.short}. Pulsa Enter sobre su baliza para abrir su estación.${left ? ` Quedan ${left} por encontrar.` : ' ¡Ya tienes las 10!'}`, 'win');
+      say(`Signal identified: ${found.short}. Press Enter on its beacon to open its station.${left ? ` ${left} left to find.` : ' You have all 10!'}`, 'win');
     } else if (gotSignals < 0) {
-      say('Exploración reiniciada. Volvemos a empezar: activa el escáner y busca la primera señal.');
+      say('Exploration restarted. Starting over: turn on the scanner and look for the first signal.');
     }
   }, [identified, missions]);
 
@@ -88,11 +88,11 @@ export default function Assistant() {
     if (!openId) return;
     const anomaly = byId[openId];
     const mission = DATASETS[openId].mission;
-    say(`Estación de ${anomaly.short}. Pulsa «Sintonizar» para oír el vídeo. ${missions.includes(openId) ? 'Su misión ya tiene ★, pero puedes repetirla.' : `Misión: ${mission.title}.`}`);
+    say(`${anomaly.short} station. Press “Tune in” to hear the video. ${missions.includes(openId) ? 'Its mission already has a ★, but you can replay it.' : `Mission: ${mission.title}.`}`);
   }, [openId]);
 
   useEffect(() => {
-    if (museum) say(missions.length ? 'Museo de los Descubrimientos. Pulsa un nodo o un hilo para leerlo, y prueba la Sinfonía Planetaria: suenan los nodos que ya tienen ★.' : 'Museo de los Descubrimientos. Aún no hay ★: cada misión que completes encenderá un nodo y sumará un instrumento a la sinfonía.');
+    if (museum) say(missions.length ? 'Museum of Discoveries. Select a node or a thread to read it, and try the Planetary Symphony: the nodes that already have a ★ play.' : 'Museum of Discoveries. No ★ yet: each mission you complete will light a node and add an instrument to the symphony.');
   }, [museum]);
 
   // Lo que pasa en la cabina frame a frame se mira de vez en cuando.
@@ -107,19 +107,19 @@ export default function Assistant() {
         quiet = performance.now();
         return;
       }
-      if (telemetry.onHatch) once('hatch', 'Esa es la escotilla del Museo de los Descubrimientos. Ábrela con Enter o con un clic.');
+      if (telemetry.onHatch) once('hatch', 'That is the hatch of the Museum of Discoveries. Open it with Enter or a click.');
       // Estos dos consejos esperan unos segundos: no deben pisar al que
       // acaba de salir ni saltar por un roce de la mira.
       behind = scan.active && scan.hidden && scan.signal > 0.1 ? behind + 0.6 : 0;
       near = scan.active && !scan.hidden && scan.signal > 0.55 && !scan.pending && scan.focus < 0 ? near + 0.6 : 0;
-      if (behind > 6) once('hidden', 'Esa señal tenue llega desde detrás del planeta. Mantén Q o E para girar la órbita hasta que asome.');
-      else if (near > 3) once('close', 'Señal fuerte. Afina la mira hasta que la onda quede limpia y mantenla quieta 1,5 segundos.');
+      if (behind > 6) once('hidden', 'That faint signal comes from behind the planet. Hold Q or E to rotate the orbit until it comes into view.');
+      else if (near > 3) once('close', 'Strong signal. Fine-tune the reticle until the wave is clean and hold it still for 1.5 seconds.');
       if (identified.length !== found || !scan.active) {
         found = identified.length;
         quiet = performance.now();
       } else if (performance.now() - quiet > NUDGE_MS && identified.length < total) {
         quiet = performance.now();
-        say('¿Cuesta dar con la siguiente? Pulsa «Pedir pista» y te marco la señal sin identificar más cercana.');
+        say('Having trouble finding the next one? Press “Ask for a hint” and I will mark the nearest unidentified signal.');
       }
     }, 600);
     return () => clearInterval(id);
@@ -182,9 +182,9 @@ export default function Assistant() {
   const hint = () => {
     if (openId) {
       const mission = DATASETS[openId].mission;
-      say(`Misión «${mission.title}»: ${mission.brief} Si el objetivo se mueve, congela el vídeo.`, 'hint');
+      say(`Mission “${mission.title}”: ${mission.brief} If the target moves, freeze the video.`, 'hint');
     } else if (museum) {
-      say('En el museo: gira la red arrastrando, pulsa un nodo para ver quién lo mide y qué se descubrió, y un hilo para leer cómo se conectan dos fenómenos. Abajo a la derecha tienes las listas completas.', 'hint');
+      say('In the museum: drag to rotate the network, select a node to see who measures it and what was discovered, and a thread to read how two phenomena connect. The full lists are at the bottom right.', 'hint');
     } else {
       scan.hintRequest = true; // <Scanner> la resuelve en el siguiente frame y me dicta la pista
     }
@@ -195,8 +195,8 @@ export default function Assistant() {
   };
 
   return (
-    <aside className={`aria${open ? ' is-open' : ''}${speaking ? ' is-speaking' : ''} is-${message.kind}`} aria-label="ARIA, guía de a bordo">
-      <button type="button" className="aria-tab" aria-expanded={open} onClick={() => setOpen(!open)} title={open ? 'Plegar a ARIA' : 'Desplegar a ARIA'}>
+    <aside className={`aria${open ? ' is-open' : ''}${speaking ? ' is-speaking' : ''} is-${message.kind}`} aria-label="ARIA, onboard guide">
+      <button type="button" className="aria-tab" aria-expanded={open} onClick={() => setOpen(!open)} title={open ? 'Collapse ARIA' : 'Expand ARIA'}>
         <span className="aria-wave" aria-hidden="true">
           <i />
           <i />
@@ -205,7 +205,7 @@ export default function Assistant() {
           <i />
         </span>
         <b>ARIA</b>
-        <span>Guía EIC</span>
+        <span>EIC Guide</span>
       </button>
       {open && (
         <div className="aria-body">
@@ -220,10 +220,10 @@ export default function Assistant() {
           </p>
           <div className="aria-actions">
             <button type="button" className="btn aria-hint" onClick={hint}>
-              {openId ? 'Recordar la misión' : museum ? '¿Qué hago aquí?' : 'Pedir pista · triangular señal'}
+              {openId ? 'Recall the mission' : museum ? 'What do I do here?' : 'Ask for a hint · triangulate signal'}
             </button>
-            <button type="button" className="btn" aria-pressed={!muted} onClick={toggleSound} title="Zumbido de cabina y avisos de ARIA">
-              Ambiente {muted ? 'apagado' : 'encendido'}
+            <button type="button" className="btn" aria-pressed={!muted} onClick={toggleSound} title="Cabin hum and ARIA sounds">
+              Ambient {muted ? 'off' : 'on'}
             </button>
           </div>
         </div>

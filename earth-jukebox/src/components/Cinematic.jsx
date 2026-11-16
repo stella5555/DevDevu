@@ -12,10 +12,10 @@ import * as retro from '../audio/retro.js';
 
 // [frase, segundo en que empieza en la grabación, milisegundos por letra]
 const SCRIPT = [
-  ['Alerta.', 0.7, 70],
-  ['Anomalía climática detectada.', 1.95, 56],
-  ['Navegación offline.', 4.1, 64],
-  ['Comandante: confirme su autorización en la consola para desbloquear el onduloscopio y restaurar el sistema terrestre.', 5.85, 70],
+  ['Alert.', 0.7, 70],
+  ['Climate anomaly detected.', 1.95, 56],
+  ['Navigation offline.', 4.1, 64],
+  ['Commander: confirm your authorization on the console to unlock the onduloscope and restore the Earth system.', 5.85, 70],
 ];
 const FULL = SCRIPT.map(([text]) => text).join(' ');
 const EYES_MS = 2300; // lo que tardan en abrirse los párpados
@@ -103,13 +103,13 @@ export default function Cinematic() {
       <div className="eyelid eyelid-top" aria-hidden="true" />
       <div className="eyelid eyelid-bottom" aria-hidden="true" />
       {awake && (
-        <section className="terminal" aria-label="Terminal ARIA">
+        <section className="terminal" aria-label="ARIA terminal">
           <header>
             <span className="terminal-face" aria-hidden="true">
               ◉
             </span>
             <b>ARIA</b>
-            <span>Terminal de a bordo · energía de reserva</span>
+            <span>Onboard terminal · backup power</span>
           </header>
           {/* El lector de pantalla recibe el mensaje entero; el tecleo es visual. */}
           <p className="sr-only" role="status">
@@ -121,7 +121,7 @@ export default function Cinematic() {
             <i className="terminal-caret" />
           </p>
           <footer>
-            <span>{done ? 'Abriendo el protocolo de seguridad…' : 'Enter o clic: mostrar todo el mensaje'}</span>
+            <span>{done ? 'Opening the security protocol…' : 'Enter or click: show the whole message'}</span>
             <button
               type="button"
               className="btn"
@@ -130,7 +130,7 @@ export default function Cinematic() {
                 skip();
               }}
             >
-              Saltar ▸▸
+              Skip ▸▸
             </button>
           </footer>
         </section>

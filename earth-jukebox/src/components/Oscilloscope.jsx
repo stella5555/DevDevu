@@ -15,12 +15,12 @@ const SCOPE = [89, 255, 200];
 const hexToRgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 
 function describe(known) {
-  if (!scan.active) return 'En espera';
-  if (scan.target < 0 || scan.signal < 0.06) return 'Solo estática';
+  if (!scan.active) return 'Standby';
+  if (scan.target < 0 || scan.signal < 0.06) return 'Static only';
   if (known && scan.signal > 0.5) return ANOMALIES[scan.target].short;
-  if (scan.hidden) return 'Señal tras el horizonte';
-  if (scan.pending) return 'Señal clara · fijando';
-  return scan.signal < 0.45 ? 'Señal débil' : 'Señal emergente';
+  if (scan.hidden) return 'Signal beyond the horizon';
+  if (scan.pending) return 'Clear signal · locking';
+  return scan.signal < 0.45 ? 'Weak signal' : 'Emerging signal';
 }
 
 // Sin audio disponible, la traza se sintetiza con la misma lógica.
@@ -133,14 +133,14 @@ export default function Oscilloscope() {
   }, []);
 
   return (
-    <section className="scope" aria-label="Onduloscopio">
+    <section className="scope" aria-label="Onduloscope">
       <header>
-        <h2>Onduloscopio</h2>
-        <p ref={label} role="status">En espera</p>
+        <h2>Onduloscope</h2>
+        <p ref={label} role="status">Standby</p>
       </header>
       <canvas ref={canvas} aria-hidden="true" />
       <div className="scope-meter">
-        <span>Señal</span>
+        <span>Signal</span>
         <div className="meter"><i ref={meter} /></div>
         <span ref={percent} className="scope-percent">0%</span>
       </div>

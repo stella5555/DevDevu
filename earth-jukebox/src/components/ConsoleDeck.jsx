@@ -128,16 +128,16 @@ function Hologram() {
     g.textAlign = 'left';
     g.fillStyle = tint;
     g.font = "500 26px 'JetBrains Mono', Consolas, monospace";
-    g.fillText('PROTOCOLO DE SEGURIDAD', 34, 44);
+    g.fillText('SECURITY PROTOCOL', 34, 44);
     g.textAlign = 'right';
     g.fillText(`${granted ? QUESTIONS.length : index + 1}/${QUESTIONS.length}`, 990, 44);
     g.textAlign = 'left';
 
     if (granted) {
       g.font = "700 58px 'Space Grotesk', 'Segoe UI', sans-serif";
-      g.fillText('AUTORIZACIÓN CONFIRMADA', 34, 200);
+      g.fillText('AUTHORIZATION CONFIRMED', 34, 200);
       g.font = "500 34px 'JetBrains Mono', Consolas, monospace";
-      g.fillText('Restaurando energía · onduloscopio en línea', 34, 270);
+      g.fillText('Restoring power · onduloscope online', 34, 270);
     } else {
       const question = QUESTIONS[index];
       g.fillStyle = '#ffb454';

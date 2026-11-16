@@ -68,7 +68,7 @@ export default function DiscoveryMuseum() {
       const ok = symphony.start(missions);
       setAudio(ok || !missions.length);
       setPlaying(ok);
-      if (ok) say(`Sinfonía Planetaria: ${missions.length === 1 ? 'toca 1 nodo' : `tocan ${missions.length} nodos`}, todos sobre la misma progresión. Apaga y enciende instrumentos para oír qué aporta cada uno.`);
+      if (ok) say(`Planetary Symphony: ${missions.length === 1 ? '1 node plays' : `${missions.length} nodes play`}, all over the same progression. Turn instruments off and on to hear what each one adds.`);
     }
   };
 
@@ -81,7 +81,7 @@ export default function DiscoveryMuseum() {
   // Un nodo sin identificar no enseña su nombre, y un hilo solo se puede leer
   // cuando sus dos extremos están identificados.
   const seen = (id) => id === 'hub' || identified.includes(id);
-  const nameOf = (id) => (id === 'hub' ? 'Centro de la red' : seen(id) ? byId[id].short : '¿?');
+  const nameOf = (id) => (id === 'hub' ? 'Center of the network' : seen(id) ? byId[id].short : '?');
   const revealed = (l) => seen(l.a) && seen(l.b);
 
   const node = selected.type === 'node' ? byId[selected.id] : null;
@@ -95,14 +95,14 @@ export default function DiscoveryMuseum() {
       <section ref={panel} className="museum" role="dialog" aria-modal="true" aria-labelledby="museum-title">
         <header className="station-head">
           <div>
-            <span className="chip">Red del Sistema Terrestre</span>
-            <h2 id="museum-title">Museo de los Descubrimientos</h2>
+            <span className="chip">Earth System Network</span>
+            <h2 id="museum-title">Museum of Discoveries</h2>
             <p className="station-id">
-              ★ {missions.length} de {ANOMALIES.length} descubrimientos · {identified.length} señales identificadas
+              ★ {missions.length} of {ANOMALIES.length} discoveries · {identified.length} signals identified
             </p>
           </div>
           <div className="station-actions">
-            <button ref={close} type="button" className="btn btn-icon" onClick={closeMuseum} aria-label="Cerrar el museo">
+            <button ref={close} type="button" className="btn btn-icon" onClick={closeMuseum} aria-label="Close the museum">
               ✕
             </button>
           </div>
@@ -113,21 +113,21 @@ export default function DiscoveryMuseum() {
             <Canvas flat dpr={[1, 2]} frameloop={stationOpen ? 'never' : 'always'} camera={{ fov: 42, near: 0.1, far: 300, position: [5, 4, 11] }}>
               <Network identified={identified} missions={missions} selected={selected} onSelect={setSelected} />
             </Canvas>
-            <figcaption>Arrastra para girar la red · rueda para acercar · pulsa un nodo o un hilo</figcaption>
+            <figcaption>Drag to rotate the network · scroll to zoom · select a node or a thread</figcaption>
           </figure>
 
           <div className="museum-side">
-            <section className="symphony" aria-label="Sinfonía Planetaria">
-              <h3>Sinfonía Planetaria</h3>
+            <section className="symphony" aria-label="Planetary Symphony">
+              <h3>Planetary Symphony</h3>
               <button type="button" className="btn btn-tune" aria-pressed={playing} disabled={!missions.length} onClick={toggleSymphony}>
-                {playing ? '❚❚ Detener la sinfonía' : '▶ Escuchar Sinfonía Planetaria'}
+                {playing ? '❚❚ Stop the symphony' : '▶ Listen to the Planetary Symphony'}
               </button>
               <p className="station-note">
                 {!missions.length
-                  ? 'Cada misión completada ★ suma un instrumento. Todavía no hay ninguno.'
+                  ? 'Each completed ★ mission adds an instrument. There are none yet.'
                   : !audio
-                    ? 'Este navegador no tiene audio.'
-                    : `${missions.length} ${missions.length === 1 ? 'instrumento toca' : 'instrumentos tocan'} la misma progresión; apaga o enciende cada uno.`}
+                    ? 'This browser has no audio.'
+                    : `${missions.length} ${missions.length === 1 ? 'instrument plays' : 'instruments play'} the same progression; turn each one off or on.`}
               </p>
               <ul>
                 {ANOMALIES.map((a) => {
@@ -142,14 +142,14 @@ export default function DiscoveryMuseum() {
                         aria-pressed={on}
                         disabled={!has}
                         onClick={() => toggleMute(a.id)}
-                        title={has ? `${a.short}: ${MUSEUM[a.id].part}` : 'Completa su misión para sumar este instrumento'}
+                        title={has ? `${a.short}: ${MUSEUM[a.id].part}` : 'Complete its mission to add this instrument'}
                       >
                         <i aria-hidden="true" />
                         {has ? MUSEUM[a.id].part : '—'}
                         <span className="sr-only">
                           {' '}
                           ({a.short}
-                          {has ? '' : ', sin desbloquear'})
+                          {has ? '' : ', locked'})
                         </span>
                       </button>
                     </li>
@@ -162,7 +162,7 @@ export default function DiscoveryMuseum() {
               {node && (
                 <div style={{ '--c': CATEGORIES[node.category].color }}>
                   <h3>
-                    Nodo {starred && <span className="mission-star">★</span>}
+                    Node {starred && <span className="mission-star">★</span>}
                   </h3>
                   {known ? (
                     <>
@@ -172,24 +172,24 @@ export default function DiscoveryMuseum() {
                         NASA SVS #{node.svsId} · {CATEGORIES[node.category].label}
                       </p>
                       <dl>
-                        <dt>Quién lo mide · miniatura: {CRAFTS[MUSEUM[node.id].craft]}</dt>
+                        <dt>Who measures it · miniature: {CRAFTS[MUSEUM[node.id].craft]}</dt>
                         <dd>{MUSEUM[node.id].instrument}</dd>
-                        <dt>Conclusión científica</dt>
-                        <dd>{starred ? MUSEUM[node.id].conclusion : 'Bloqueada: completa la misión de su estación para ganar la ★ y leerla.'}</dd>
+                        <dt>Scientific conclusion</dt>
+                        <dd>{starred ? MUSEUM[node.id].conclusion : 'Locked: complete the mission at its station to earn the ★ and read it.'}</dd>
                       </dl>
                       <button type="button" className="btn station-link" onClick={() => openPanel(node.id)}>
-                        Abrir su estación de análisis
+                        Open its analysis station
                       </button>
                     </>
                   ) : (
                     <>
-                      <h4>Señal sin identificar</h4>
-                      <p>Este nodo de la red sigue oculto. Vuelve a la cabina, activa el escáner y encuentra su señal sobre la Tierra.</p>
+                      <h4>Unidentified signal</h4>
+                      <p>This node of the network is still hidden. Go back to the cabin, turn on the scanner and find its signal over the Earth.</p>
                     </>
                   )}
                   {nodeLinks.length > 0 && (
                     <div className="museum-links">
-                      <h3>Sus hilos</h3>
+                      <h3>Its threads</h3>
                       {nodeLinks.map((l) => (
                         <button key={l.id} type="button" className="btn" onClick={() => setSelected({ type: 'link', id: l.id })}>
                           ↔ {nameOf(l.a === node.id ? l.b : l.a)}
@@ -202,26 +202,26 @@ export default function DiscoveryMuseum() {
 
               {link && (
                 <div>
-                  <h3>Hilo causal</h3>
+                  <h3>Causal thread</h3>
                   <h4>
                     {nameOf(link.a)} ↔ {nameOf(link.b)}
                   </h4>
-                  <p className="station-note">La explicación está en el cuadro flotante, junto a la red.</p>
+                  <p className="station-note">The explanation is in the floating box, next to the network.</p>
                 </div>
               )}
 
               {selected.type === 'hub' && (
                 <div>
-                  <h3>Centro</h3>
+                  <h3>Center</h3>
                   <h4>{HUB.title}</h4>
                   <p>{HUB.text}</p>
-                  <p>Pulsa un nodo para ver quién lo mide y qué se descubrió, o un hilo para leer cómo se relacionan dos fenómenos.</p>
+                  <p>Select a node to see who measures it and what was discovered, or a thread to read how two phenomena relate.</p>
                 </div>
               )}
             </section>
 
-            <nav className="museum-index" aria-label="Nodos e hilos de la red">
-              <h3>Nodos</h3>
+            <nav className="museum-index" aria-label="Nodes and threads of the network">
+              <h3>Nodes</h3>
               <div>
                 {ANOMALIES.map((a) => (
                   <button
@@ -231,12 +231,12 @@ export default function DiscoveryMuseum() {
                     aria-pressed={selected.type === 'node' && selected.id === a.id}
                     onClick={() => setSelected({ type: 'node', id: a.id })}
                   >
-                    {identified.includes(a.id) ? a.short : 'Sin identificar'}
+                    {identified.includes(a.id) ? a.short : 'Unidentified'}
                     {missions.includes(a.id) && <span className="mission-star"> ★</span>}
                   </button>
                 ))}
               </div>
-              <h3>Hilos causales</h3>
+              <h3>Causal threads</h3>
               <div>
                 {LINKS.map((l) => (
                   <button
@@ -257,10 +257,10 @@ export default function DiscoveryMuseum() {
         {/* La explicación del hilo elegido flota a un lado de la red, siempre a
             la vista: no hay que desplazar la columna lateral para leerla. */}
         {link && (
-          <aside key={link.id} className="museum-float" aria-label="Hilo causal seleccionado">
+          <aside key={link.id} className="museum-float" aria-label="Selected causal thread">
             <header>
-              <h3>Hilo causal</h3>
-              <button type="button" className="btn btn-icon" onClick={() => setSelected({ type: 'hub' })} aria-label="Cerrar la explicación del hilo">
+              <h3>Causal thread</h3>
+              <button type="button" className="btn btn-icon" onClick={() => setSelected({ type: 'hub' })} aria-label="Close the thread explanation">
                 ✕
               </button>
             </header>
@@ -273,12 +273,12 @@ export default function DiscoveryMuseum() {
                 <p>{link.text}</p>
               </>
             ) : (
-              <p>Hilo sin descubrir: identifica con el escáner las señales de sus dos extremos para leer cómo se relacionan.</p>
+              <p>Undiscovered thread: identify the signals at both ends with the scanner to read how they relate.</p>
             )}
             <div className="museum-links">
               {[link.a, link.b].map((id) => (
                 <button key={id} type="button" className="btn" onClick={() => setSelected(id === 'hub' ? { type: 'hub' } : { type: 'node', id })}>
-                  Ver {nameOf(id)}
+                  See {nameOf(id)}
                 </button>
               ))}
             </div>

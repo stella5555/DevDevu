@@ -12,33 +12,33 @@ export const BUTTON_LETTERS = ['A', 'B', 'C'];
 
 export const QUESTIONS = [
   {
-    topic: 'Misión GEDI',
-    text: '¿Qué región es crucial para almacenar carbono gracias a sus árboles gigantes?',
-    options: ['El desierto del Sahara', 'Las selvas del Amazonas y el Congo', 'La tundra ártica'],
+    topic: 'GEDI mission',
+    text: 'Which region is crucial for storing carbon thanks to its giant trees?',
+    options: ['The Sahara desert', 'The Amazon and Congo rainforests', 'The Arctic tundra'],
     answer: 1,
   },
   {
-    topic: 'Telemetría ISS',
-    text: '¿Dónde caen la mayoría de los rayos del planeta?',
-    options: ['Sobre el océano abierto', 'En los polos', 'En tierra firme, en los trópicos'],
+    topic: 'ISS telemetry',
+    text: 'Where does most of the planet\'s lightning strike?',
+    options: ['Over the open ocean', 'At the poles', 'Over land, in the tropics'],
     answer: 2,
   },
   {
-    topic: 'Aerosoles GEOS',
-    text: '¿Qué viaja desde el Sahara para fertilizar la Amazonia?',
-    options: ['Polvo mineral', 'Sal marina', 'Vapor de agua'],
+    topic: 'GEOS aerosols',
+    text: 'What travels from the Sahara to fertilize the Amazon?',
+    options: ['Mineral dust', 'Sea salt', 'Water vapor'],
     answer: 0,
   },
   {
-    topic: 'Termodinámica',
-    text: '¿Qué mueven principalmente corrientes como la del Golfo?',
-    options: ['Hielo de los polos al ecuador', 'Calor del ecuador a los polos', 'Arena del fondo marino'],
+    topic: 'Thermodynamics',
+    text: 'What do currents like the Gulf Stream mainly move?',
+    options: ['Ice from the poles to the equator', 'Heat from the equator to the poles', 'Sand from the seafloor'],
     answer: 1,
   },
   {
     topic: 'CO₂',
-    text: '¿Qué absorbe una cuarta parte de nuestro CO₂, además de los bosques?',
-    options: ['Los desiertos', 'Las ciudades', 'El océano'],
+    text: 'What absorbs a quarter of our CO₂, besides forests?',
+    options: ['Deserts', 'Cities', 'The ocean'],
     answer: 2,
   },
 ];

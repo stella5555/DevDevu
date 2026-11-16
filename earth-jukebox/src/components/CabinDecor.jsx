@@ -58,8 +58,8 @@ export function WallFrames() {
   const [team, plushie] = useTexture([`${BASE}team.jpeg`, `${BASE}plushie.jpeg`]);
   return (
     <>
-      <Photo map={team} width={1.15} height={0.647} caption="TRIPULACIÓN" position={[-1.93, 0.28, 0.45]} rotation={[0, Math.PI / 2, 0]} />
-      <Photo map={plushie} width={0.52} height={0.924} caption="MASCOTA DE A BORDO" position={[1.93, 0.24, 0.45]} rotation={[0, -Math.PI / 2, 0]} />
+      <Photo map={team} width={1.15} height={0.647} caption="CREW" position={[-1.93, 0.28, 0.45]} rotation={[0, Math.PI / 2, 0]} />
+      <Photo map={plushie} width={0.52} height={0.924} caption="ONBOARD MASCOT" position={[1.93, 0.24, 0.45]} rotation={[0, -Math.PI / 2, 0]} />
     </>
   );
 }

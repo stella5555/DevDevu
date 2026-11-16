@@ -75,7 +75,7 @@ const Histogram = forwardRef(function Histogram({ layers, bare = false }, ref) {
     g.textBaseline = 'top';
     [0, 25, 50, 75, 100].forEach((percent, i, all) => {
       g.textAlign = i === 0 ? 'left' : i === all.length - 1 ? 'right' : 'center';
-      g.fillText(`${percent} %`, PAD.left + (percent / 100) * plotW, height - PAD.bottom + 6);
+      g.fillText(`${percent}%`, PAD.left + (percent / 100) * plotW, height - PAD.bottom + 6);
     });
     g.beginPath();
     g.moveTo(PAD.left, PAD.top + plotH + 0.5);
@@ -155,29 +155,29 @@ const Histogram = forwardRef(function Histogram({ layers, bare = false }, ref) {
   const share = (k) => {
     const { hist, total } = data.current;
     const percent = hist ? (binned(hist[k])[hover] / total) * 100 : 0;
-    return percent >= 0.01 || percent === 0 ? `${percent.toFixed(2)} %` : '< 0.01 %';
+    return percent >= 0.01 || percent === 0 ? `${percent.toFixed(2)}%` : '< 0.01%';
   };
 
   return (
     <Frame className={bare ? undefined : 'histogram'}>
       {!bare && (
         <figcaption>
-          <h3>Histograma de fenómenos</h3>
-          <span>píxeles por intensidad · escala logarítmica</span>
+          <h3>Phenomenon histogram</h3>
+          <span>pixels by intensity · logarithmic scale</span>
         </figcaption>
       )}
       <div className="histogram-plot">
         <canvas
           ref={canvas}
           role="img"
-          aria-label="Histograma en vivo de la intensidad de los cuatro fenómenos en el fotograma actual. La tabla del modo lectura da los mismos datos en texto."
+          aria-label="Live histogram of the intensity of the four phenomena in the current frame. The reading-mode table gives the same data as text."
           onPointerMove={track}
           onPointerLeave={() => setHover(null)}
         />
         {hover !== null && (
           <div className="histogram-tip" style={{ left: `${((hover + 0.5) / BINS) * 100}%` }} data-side={hover > BINS * 0.55 ? 'left' : 'right'}>
             <strong>
-              Intensidad {Math.round((hover / BINS) * 100)}–{Math.round(((hover + 1) / BINS) * 100)} %
+              Intensity {Math.round((hover / BINS) * 100)}–{Math.round(((hover + 1) / BINS) * 100)}%
             </strong>
             {layers.map((layer, k) => (
               <span key={layer.name}>
@@ -198,10 +198,10 @@ const Histogram = forwardRef(function Histogram({ layers, bare = false }, ref) {
         ))}
         <li>
           <i className="legend-marker" />
-          Franja actual
+          Current strip
         </li>
       </ul>
-      {bare && <p className="chart-summary">Píxeles del fotograma por intensidad de cada fenómeno · escala logarítmica.</p>}
+      {bare && <p className="chart-summary">Pixels of the frame by intensity of each phenomenon · logarithmic scale.</p>}
     </Frame>
   );
 });

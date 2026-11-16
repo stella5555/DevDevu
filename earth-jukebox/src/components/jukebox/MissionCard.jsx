@@ -14,9 +14,9 @@ export default function MissionCard({ spec, mission, view, completed, guide, loc
   const glow = (target) => (guide?.target === target ? ' is-guide' : '');
 
   return (
-    <section className={`mission${finished ? ' is-done' : ''}`} aria-label="Misión activa">
+    <section className={`mission${finished ? ' is-done' : ''}`} aria-label="Active mission">
       <header>
-        <h3>{finished || completed ? 'Misión completada' : 'Misión activa'}</h3>
+        <h3>{finished || completed ? 'Mission complete' : 'Active mission'}</h3>
         {(finished || completed) && <span className="mission-star">★</span>}
       </header>
       <h4>{spec.title}</h4>
@@ -26,7 +26,7 @@ export default function MissionCard({ spec, mission, view, completed, guide, loc
           <li key={step} className={done[i] ? 'is-done' : i === current ? 'is-current' : ''}>
             <span aria-hidden="true">{done[i] ? '✓' : i + 1}</span>
             {step}
-            {done[i] && <span className="sr-only"> (hecho)</span>}
+            {done[i] && <span className="sr-only"> (done)</span>}
           </li>
         ))}
       </ol>
@@ -35,7 +35,7 @@ export default function MissionCard({ spec, mission, view, completed, guide, loc
         <label className={`mission-slider${glow('slider')}`}>
           <span>
             {control.label} <b>{control.format(value)}</b>
-            {guide?.target === 'slider' && <span className="step-chip">Paso {guide.step}</span>}
+            {guide?.target === 'slider' && <span className="step-chip">Step {guide.step}</span>}
           </span>
           <input
             type="range"
@@ -70,14 +70,14 @@ export default function MissionCard({ spec, mission, view, completed, guide, loc
           <button type="button" className={`btn mission-action${glow('action')}${locked ? ' is-locked' : ''}`} disabled={locked} onClick={() => mission.action()}>
             {locked && <span aria-hidden="true">🔒</span>}
             {control.label}
-            {(locked || guide?.target === 'action') && <span className="step-chip">Paso 2</span>}
+            {(locked || guide?.target === 'action') && <span className="step-chip">Step 2</span>}
           </button>
-          {locked && <p className="mission-lock">Paso 1: congela el vídeo para desbloquear este botón.</p>}
+          {locked && <p className="mission-lock">Step 1: freeze the video to unlock this button.</p>}
         </>
       )}
 
       <p className="mission-hint" role="status">
-        {finished ? '¡Descubrimiento registrado! La anomalía queda marcada con ★ en el registro de señales.' : view.hint}
+        {finished ? 'Discovery logged! The anomaly is now marked with ★ in the signal log.' : view.hint}
       </p>
     </section>
   );

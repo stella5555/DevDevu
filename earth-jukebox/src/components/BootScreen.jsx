@@ -5,29 +5,29 @@ import { ambient } from '../audio/ambient.js';
 
 const TIPS = [
   {
-    title: 'El onduloscopio',
+    title: 'The onduloscope',
     video: 'tip-escaner.mp4',
-    text: 'Activa el escáner con Espacio y barre la Tierra con la mira. La estática se limpia y aparece música cuando te acercas a una señal.',
+    text: 'Turn on the scanner with Space and sweep the Earth with the reticle. The static clears and music appears as you get close to a signal.',
   },
   {
-    title: 'Gira la órbita (Q / E)',
+    title: 'Rotate the orbit (Q / E)',
     video: 'tip-orbita.mp4',
-    text: 'Las señales de la cara oculta llegan apagadas. Mantén Q o E para girar la órbita hasta que asomen por el borde del planeta.',
+    text: 'Signals on the far side arrive muffled. Hold Q or E to rotate the orbit until they come over the edge of the planet.',
   },
   {
-    title: 'Estaciones y misiones ★',
+    title: 'Stations and ★ missions',
     video: 'tip-misiones.mp4',
-    text: 'Cada señal abre una estación con su vídeo de la NASA y un reto distinto. Complétalo para ganar su estrella ★.',
+    text: 'Each signal opens a station with its NASA video and a different challenge. Complete it to earn its ★ star.',
   },
   {
-    title: 'El Museo, a tu espalda',
+    title: 'The Museum, behind you',
     video: 'tip-museo.mp4',
-    text: 'Gira 180° hacia atrás para ver la escotilla del Museo. Guarda la red que conecta los diez fenómenos.',
+    text: 'Turn 180° to see the Museum hatch. It holds the network that connects the ten phenomena.',
   },
   {
-    title: 'ARIA te acompaña',
+    title: 'ARIA is with you',
     video: 'tip-aria.mp4',
-    text: 'Si te atascas buscando una señal, pídele una pista a ARIA arriba para que te indique hacia dónde mover la mira.',
+    text: 'If you get stuck looking for a signal, ask ARIA for a hint at the top and it will tell you which way to move the reticle.',
   },
 ];
 
@@ -562,7 +562,7 @@ export default function BootScreen({ leaving }) {
       className={`boot cinema-boot${leaving ? ' is-leaving' : ''}`}
       role="dialog"
       aria-modal="true"
-      aria-label="Pantalla de carga de Earth Information Jukebox"
+      aria-label="Earth Information Jukebox loading screen"
       onClick={unlockVideoAudio}
     >
       <style>{SELF_CSS}</style>
@@ -576,15 +576,15 @@ export default function BootScreen({ leaving }) {
         aria-pressed={bootAudioOn}
         onClick={toggleBootAudio}
       >
-        {bootAudioOn ? '🔊 Sonido ON' : '🔇 Silencio'}
+        {bootAudioOn ? '🔊 Sound ON' : '🔇 Muted'}
       </button>
 
-      {/* ESCENA 1: DEV DEVU PRESENTA */}
+      {/* ESCENA 1: DEV DEVU PRESENTS */}
       {stage === 'studio' && (
         <div className="cinema-scene" key="studio" onClick={advanceIntro} role="presentation">
-          <p className="cinema-kicker">NASA Space Apps Challenge · Crónicas Orbitales</p>
-          <h1 className="cinema-studio-title">DEV DEVU PRESENTA</h1>
-          <p className="cinema-quote">Una experiencia interactiva de sonificación planetaria</p>
+          <p className="cinema-kicker">NASA Space Apps Challenge · Orbital Chronicles</p>
+          <h1 className="cinema-studio-title">DEV DEVU PRESENTS</h1>
+          <p className="cinema-quote">An interactive planetary sonification experience</p>
         </div>
       )}
 
@@ -594,30 +594,30 @@ export default function BootScreen({ leaving }) {
           <Emblem />
           <p className="cinema-kicker">NASA Scientific Visualization Studio</p>
           <h1 className="cinema-main-title">Earth Information Jukebox</h1>
-          <p className="cinema-sub">Sinfonía Orbital</p>
+          <p className="cinema-sub">Orbital Symphony</p>
         </div>
       )}
 
       {/* ESCENA 3: HOMENAJE + EL ZORRITO EN GRANDE COMO TE GUSTÓ */}
       {stage === 'homage' && (
         <div className="cinema-scene" key="homage" onClick={advanceIntro} role="presentation">
-          <p className="cinema-kicker">Inspirado en</p>
+          <p className="cinema-kicker">Inspired by</p>
           <h2 className="cinema-homage-row">
             <span className="h-amber">Project Hail Mary</span>
             <span className="h-amp">&amp;</span>
             <span className="h-cyan">Outer Wilds</span>
           </h2>
           <p className="cinema-quote">
-            «Explora el cosmos, escucha las anomalías y salva nuestro hogar, una nota a la vez.»
+            “Explore the cosmos, listen to the anomalies and save our home, one note at a time.”
           </p>
-          <img src={`${base}mascota.gif`} alt="Mascota Ryland Grace" className="cinema-hero-fox" />
+          <img src={`${base}mascota.gif`} alt="Ryland Grace mascot" className="cinema-hero-fox" />
         </div>
       )}
 
       {/* ESCENA 4: TUTORIAL DE 5 CONSEJOS */}
       {stage === 'tips' && (
         <div className="cinema-tips-wrap">
-          <span className="cinema-tip-badge">Consejo {tip + 1} de {TIPS.length}</span>
+          <span className="cinema-tip-badge">Tip {tip + 1} of {TIPS.length}</span>
           <h2 className="cinema-tip-title">{TIPS[tip].title}</h2>
           <p className="cinema-tip-desc">{TIPS[tip].text}</p>
 
@@ -631,10 +631,10 @@ export default function BootScreen({ leaving }) {
               loop
               muted={!bootAudioOn}
               playsInline
-              aria-label={`Vídeo de demostración: ${TIPS[tip].title}`}
+              aria-label={`Demo video: ${TIPS[tip].title}`}
               onTimeUpdate={handleTimeUpdate}
             />
-            <div className="cinema-timeline" onClick={handleSeek} role="presentation" title="Adelantar o retroceder">
+            <div className="cinema-timeline" onClick={handleSeek} role="presentation" title="Seek forward or back">
               <div className="cinema-timeline-fill" style={{ width: `${vidRatio}%` }} />
             </div>
           </div>
@@ -645,7 +645,7 @@ export default function BootScreen({ leaving }) {
               className="cinema-btn"
               onClick={() => setTip((tip + TIPS.length - 1) % TIPS.length)}
             >
-              ‹ Anterior
+              ‹ Previous
             </button>
 
             <div className="cinema-dots-row">
@@ -655,7 +655,7 @@ export default function BootScreen({ leaving }) {
                   type="button"
                   className={`cinema-dot${i === tip ? ' is-active' : ''}${seenTips.has(i) ? ' is-seen' : ''}`}
                   onClick={() => setTip(i)}
-                  aria-label={`Consejo ${i + 1}: ${item.title}`}
+                  aria-label={`Tip ${i + 1}: ${item.title}`}
                   aria-current={i === tip ? 'step' : undefined}
                 />
               ))}
@@ -667,11 +667,11 @@ export default function BootScreen({ leaving }) {
                 className="cinema-btn cinema-btn-next"
                 onClick={() => setTip((tip + 1) % TIPS.length)}
               >
-                Siguiente consejo ›
+                Next tip ›
               </button>
             ) : (
               <button type="button" className="cinema-btn cinema-btn-launch" onClick={launch}>
-                ▶ Iniciar experiencia
+                ▶ Start experience
               </button>
             )}
           </div>
@@ -696,7 +696,7 @@ export default function BootScreen({ leaving }) {
               aria-hidden="true"
               style={{ width: '18px', height: '18px', objectFit: 'contain' }}
             />
-            <span>Se recomienda usar audífonos y activar el sonido arriba a la derecha para la experiencia completa</span>
+            <span>Headphones recommended: turn on the sound at the top right for the full experience</span>
           </p>
         </div>
       )}
@@ -708,7 +708,7 @@ export default function BootScreen({ leaving }) {
           <img src={`${base}mascota.gif`} alt="" className="cinema-fox-spin360" />
         </div>
         <div className="cinema-loading-line">
-          <span>{ready ? 'Listo' : 'Cargando'}</span>
+          <span>{ready ? 'Ready' : 'Loading'}</span>
           <span className="cinema-wave-dots">
             <i /><i /><i />
           </span>

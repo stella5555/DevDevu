@@ -18,7 +18,7 @@ import { sampleAt, cellAt, hotspot, peakCell } from './analysis.js';
 // motor de audio (m.son), anillos sobre el visor (m.ring), el fenómeno aislado
 // (m.isolated()), el vídeo y m.notify() para refrescar la tarjeta.
 
-const pct = (value) => `${Math.round(value * 100)} %`;
+const pct = (value) => `${Math.round(value * 100)}%`;
 const clamp01 = (value) => Math.min(1, Math.max(0, value));
 const AMBER = '#ffb454';
 const SCOPE = '#59ffc8';
@@ -76,7 +76,7 @@ function label(g, text, x, y, dpr, align = 'left') {
 // ── #13786 · Tutorial: calibrar el onduloscopio ──
 function calibrate(m) {
   const M = base(m);
-  M.hint = 'Toca cualquier estrella para oírla.';
+  M.hint = 'Tap any star to hear it.';
   const NEAR = 0.18;
   const FAR = 0.4;
   M.pointer = (type, u, v) => {
@@ -88,8 +88,8 @@ function calibrate(m) {
     const hz = m.son.scaleHz(radius, 3, 2);
     m.son.tone(hz, { level: 0.08 + 0.45 * star.max, dur: 0.9, type: 'triangle' });
     m.ring(star.maxU, star.maxV, '#ffffff', 0.7 + star.max);
-    const pitch = radius < NEAR ? 'grave' : radius > FAR ? 'aguda' : 'media';
-    M.hint = `A ${pct(radius)} del radio y brillo ${pct(star.max)}: nota ${pitch} (${Math.round(hz)} Hz).`;
+    const pitch = radius < NEAR ? 'low' : radius > FAR ? 'high' : 'mid';
+    M.hint = `At ${pct(radius)} of the radius and brightness ${pct(star.max)}: ${pitch} note (${Math.round(hz)} Hz).`;
     if (radius < NEAR && star.max > 0.5) M.done[0] = true;
     if (radius > FAR && star.max > 0.55) M.done[1] = true;
     m.notify();
@@ -98,7 +98,7 @@ function calibrate(m) {
     const reach = Math.hypot(W, H) / 2;
     g.setLineDash([6 * dpr, 6 * dpr]);
     g.lineWidth = 1.5 * dpr;
-    for (const [radius, text] of [[NEAR, 'grave'], [FAR, 'agudo →']]) {
+    for (const [radius, text] of [[NEAR, 'low'], [FAR, 'high →']]) {
       g.strokeStyle = 'rgba(234, 255, 248, 0.6)';
       g.beginPath();
       g.arc(W / 2, H / 2, radius * reach, 0, Math.PI * 2);
@@ -118,8 +118,8 @@ function timeTravel(m) {
   let year = from;
   let pulse = 0;
   Object.defineProperty(M, 'year', { get: () => year }); // lo lee la curva temporal
-  M.control = { type: 'slider', label: 'Año', min: from, max: to, step: 0.05, value: from, format: (value) => String(Math.round(value)) };
-  M.hint = `Estás en ${from}. Arrastra el deslizador hacia ${to}.`;
+  M.control = { type: 'slider', label: 'Year', min: from, max: to, step: 0.05, value: from, format: (value) => String(Math.round(value)) };
+  M.hint = `You are in ${from}. Drag the slider toward ${to}.`;
   // El fotograma de 2012 es la referencia de "lo que ha crecido".
   M.init = () => m.setReference();
   M.setControl = (value) => {
@@ -129,9 +129,9 @@ function timeTravel(m) {
     m.son.energy = 0.1 + 0.9 * t;
     if (value >= to - 0.4 && !M.done[0]) {
       M.done[0] = true;
-      M.hint = `${to}: aísla «Nuevas metrópolis» para ver lo que creció y toca la región que más lo hizo.`;
+      M.hint = `${to}: isolate “New metropolises” to see what grew, then tap the region that grew the most.`;
     } else if (!M.done[0]) {
-      M.hint = `Año ${Math.round(value)}: la luz nueva ocupa ${pct(m.A().coverage[m.spec.growth])} de la imagen.`;
+      M.hint = `Year ${Math.round(value)}: new light covers ${pct(m.A().coverage[m.spec.growth])} of the image.`;
     }
     m.notify();
   };
@@ -158,12 +158,12 @@ function timeTravel(m) {
   M.pointer = (type, u, v) => {
     if (type !== 'down') return;
     if (!M.done[0]) {
-      M.hint = `Primero viaja hasta ${to} con el deslizador.`;
+      M.hint = `First travel to ${to} with the slider.`;
     } else {
       const here = cellAt(m.A(), m.spec.growth, u, v) / Math.max(1e-6, top().value);
       m.ring(u, v, here >= 0.6 ? SCOPE : '#ffffff', 1);
       if (here >= 0.6) M.done[1] = true;
-      else M.hint = `Aquí la luz creció un ${pct(here)} del máximo. Sigue buscando.`;
+      else M.hint = `Here light grew to ${pct(here)} of the maximum. Keep looking.`;
     }
     m.notify();
   };
@@ -179,28 +179,28 @@ function separate(m) {
   const target = m.spec.target;
   const core = tracker(m, target);
   let seen = -2;
-  M.hint = 'Usa «Aislar fenómeno» para probar cada capa.';
+  M.hint = 'Use “Isolate phenomenon” to try each layer.';
   M.update = () => {
     const isolated = m.isolated();
     if (isolated === seen) return;
     seen = isolated;
     if (isolated === target) {
       M.done[0] = true;
-      M.hint = `Sí: es ${m.layers[target].name.toLowerCase()}. Ahora toca el núcleo de la nube.`;
+      M.hint = `Yes: it is ${m.layers[target].name.toLowerCase()}. Now tap the core of the cloud.`;
     } else if (isolated >= 0 && !M.done[0]) {
-      M.hint = `${m.layers[isolated].name} ocupa ${pct(m.A().coverage[isolated])} de la imagen, pero no forma esa nube. Prueba otra capa.`;
+      M.hint = `${m.layers[isolated].name} covers ${pct(m.A().coverage[isolated])} of the image, but it does not form that cloud. Try another layer.`;
     }
     m.notify();
   };
   M.pointer = (type, u, v) => {
     if (type !== 'down') return;
     if (!M.done[0]) {
-      M.hint = 'Primero aísla la capa correcta.';
+      M.hint = 'First isolate the right layer.';
     } else {
       const here = cellAt(m.A(), target, u, v) / Math.max(1e-6, core().value);
       m.ring(u, v, here >= 0.7 ? SCOPE : '#ffffff', 1);
       if (here >= 0.7) M.done[1] = true;
-      else M.hint = `Densidad aquí: ${pct(here)} del máximo. El núcleo está donde la capa brilla más.`;
+      else M.hint = `Density here: ${pct(here)} of the maximum. The core is where the layer shines brightest.`;
     }
     m.notify();
   };
@@ -239,8 +239,8 @@ function buoy(m) {
   const read = { flow: 0, warmth: 0.5, water: false };
   let beat = 0;
   let held = 0;
-  M.gauges = [{ label: 'Flujo', value: 0 }, { label: 'Calidez', value: 0 }];
-  M.hint = 'Arrastra la boya desde la esquina y suéltala en el agua.';
+  M.gauges = [{ label: 'Flow', value: 0 }, { label: 'Warmth', value: 0 }];
+  M.hint = 'Drag the buoy from the corner and drop it in the water.';
 
   // Partículas que siguen las líneas de corriente. No hay dato de velocidad en
   // el vídeo: se mueven a lo largo de las crestas del flujo (perpendiculares a
@@ -256,9 +256,9 @@ function buoy(m) {
   M.dropped = () => {
     if (read.water) {
       M.done[0] = true;
-      M.hint = 'Boya en el agua. Llévala a una corriente rápida y cálida.';
+      M.hint = 'Buoy in the water. Move it to a fast, warm current.';
     } else {
-      M.hint = 'Eso es tierra firme: suéltala en el océano.';
+      M.hint = 'That is land: drop it in the ocean.';
     }
     m.notify();
   };
@@ -350,7 +350,7 @@ function buoy(m) {
     g.moveTo(x, y - 10 * dpr);
     g.lineTo(x, y - 22 * dpr);
     g.stroke();
-    if (!item.placed && !item.dragging) label(g, 'boya', x + 16 * dpr, y, dpr);
+    if (!item.placed && !item.dragging) label(g, 'buoy', x + 16 * dpr, y, dpr);
   };
   return M;
 }
@@ -369,8 +369,8 @@ function stormHunter(m) {
   let budget = 2; // anillos de destello disponibles
   let cursor = null;
   const epicenter = { u: 0.5, v: 0.5, value: 0 };
-  M.gauges = [{ label: 'Descarga bajo el cursor', value: 0 }];
-  M.hint = 'Mira dónde se repiten los destellos.';
+  M.gauges = [{ label: 'Discharge under the cursor', value: 0 }];
+  M.hint = 'Watch where the flashes repeat.';
 
   const smooth = (A, cx, cy) => {
     let sum = 0;
@@ -418,7 +418,7 @@ function stormHunter(m) {
       }
       if (observed >= 4 && !M.done[0]) {
         M.done[0] = true;
-        M.hint = 'Ya hay datos: mueve el cursor hasta donde más descargas se acumulan y mantenlo quieto.';
+        M.hint = 'Enough data: move the cursor to where the most discharges pile up and hold it still.';
         m.notify();
       }
     }
@@ -470,9 +470,9 @@ function probe(m) {
   const item = draggable(M, m, [0.1, 0.84]);
   let saturation = 0;
   let beep = 0;
-  M.gauges = [{ label: 'Saturación', value: 0 }];
-  M.control = { type: 'button', label: 'Marcar punto crítico' };
-  M.hint = `Arrastra la sonda por el visor en busca de ${m.spec.unit}.`;
+  M.gauges = [{ label: 'Saturation', value: 0 }];
+  M.control = { type: 'button', label: 'Mark critical point' };
+  M.hint = `Drag the probe around the viewer looking for ${m.spec.unit}.`;
   const read = () => {
     saturation = clamp01(cellAt(m.A(), target, item.u, item.v, WIDE) / Math.max(0.02, core().value));
     M.gauges[0].value = saturation;
@@ -481,7 +481,7 @@ function probe(m) {
     read();
     if (saturation >= 0.5 && !M.done[0]) {
       M.done[0] = true;
-      M.hint = 'Dentro del corredor. Busca el máximo y márcalo.';
+      M.hint = 'Inside the corridor. Find the maximum and mark it.';
       m.notify();
     }
     if (!item.placed && !item.dragging) return;
@@ -497,7 +497,7 @@ function probe(m) {
     read();
     m.ring(item.u, item.v, saturation >= 0.85 ? SCOPE : '#ffffff', 1.4);
     if (saturation >= 0.85) M.done[1] = M.done[0] = true;
-    else M.hint = `Saturación ${pct(saturation)}: todavía no es el punto crítico (hace falta 85 %). Si se te escapa, congela el vídeo.`;
+    else M.hint = `Saturation ${pct(saturation)}: not the critical point yet (85% needed). If it slips away, freeze the video.`;
     m.notify();
   };
   M.draw = (g, W, H, dpr) => {
@@ -517,7 +517,7 @@ function probe(m) {
     g.moveTo(x, y + 6 * dpr);
     g.lineTo(x, y + 20 * dpr);
     g.stroke();
-    label(g, item.placed || item.dragging ? pct(saturation) : 'sonda', x + 24 * dpr, y, dpr);
+    label(g, item.placed || item.dragging ? pct(saturation) : 'probe', x + 24 * dpr, y, dpr);
     if (M.done[1]) marker(g, core().u * W, core().v * H, dpr, SCOPE, 16);
   };
   return M;
@@ -535,8 +535,8 @@ function canopy(m) {
   let cursor = null;
   let note = 0;
   let under = 0; // m bajo el cursor
-  M.gauges = [{ label: 'Altura bajo el cursor', value: 0 }];
-  M.hint = 'Pasa el cursor sobre la tierra firme.';
+  M.gauges = [{ label: 'Height under the cursor', value: 0 }];
+  M.hint = 'Move the cursor over land.';
 
   const heightAt = (A, x, y) => {
     let sum = 0;
@@ -586,7 +586,7 @@ function canopy(m) {
       note = 0.13;
       m.son.marimba(m.son.scaleHz(under / GEDI_MAX_METERS, 3, 2), 0.1 + 0.3 * (under / GEDI_MAX_METERS), clamp01(mean / 28));
     }
-    const text = `Dosel bajo el cursor: ${Math.round(under)} m · el más alto de la imagen: ${Math.round(peak * GEDI_MAX_METERS)} m.`;
+    const text = `Canopy under the cursor: ${Math.round(under)} m · tallest in the image: ${Math.round(peak * GEDI_MAX_METERS)} m.`;
     let changed = text !== M.hint;
     M.hint = text;
     if (mean >= 20 && !M.done[0]) changed = M.done[0] = true;

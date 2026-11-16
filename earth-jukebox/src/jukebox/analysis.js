@@ -413,14 +413,14 @@ export function describeStrip(analysis, index, layers) {
   const s = analysis.strips[index];
   const where =
     analysis.scan === 'radial'
-      ? `Aguja a ${Math.round((index / STEPS) * 360)} grados`
-      : `Barrido al ${Math.round((index / STEPS) * 100)} por ciento del ancho`;
-  const light = s.l < 0.06 ? 'casi negra' : s.l < 0.2 ? 'oscura' : s.l < 0.45 ? 'de brillo medio' : 'brillante';
-  const level = (value) => (value > 0.66 ? 'fuerte' : value > 0.33 ? 'medio' : 'suave');
+      ? `Needle at ${Math.round((index / STEPS) * 360)} degrees`
+      : `Sweep at ${Math.round((index / STEPS) * 100)} percent of the width`;
+  const light = s.l < 0.06 ? 'almost black' : s.l < 0.2 ? 'dark' : s.l < 0.45 ? 'medium-bright' : 'bright';
+  const level = (value) => (value > 0.66 ? 'strong' : value > 0.33 ? 'medium' : 'soft');
   const present = layers
     .map((layer, k) => ({ name: layer.name.toLowerCase(), value: normalized(analysis, k, s.v[k]), raw: s.v[k] }))
     .filter((item) => item.raw > 0.004 && item.value > 0.12)
     .sort((a, b) => b.value - a.value);
-  if (!present.length) return `${where}: franja ${light}, sin ninguno de los cuatro fenómenos. Casi silencio.`;
-  return `${where}: franja ${light}. Suenan ${present.map((item) => `${item.name} (${level(item.value)})`).join(', ')}.`;
+  if (!present.length) return `${where}: ${light} strip, none of the four phenomena. Near silence.`;
+  return `${where}: ${light} strip. Playing: ${present.map((item) => `${item.name} (${level(item.value)})`).join(', ')}.`;
 }

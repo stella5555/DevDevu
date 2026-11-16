@@ -17,7 +17,7 @@ import MissionCard from './jukebox/MissionCard.jsx';
 const ANALYSIS_MS = 100;
 const RING_MS = 850;
 const SCAN_COLOR = '89, 255, 200';
-const percent = (value, digits = 0) => `${(value * 100).toFixed(digits)} %`;
+const percent = (value, digits = 0) => `${(value * 100).toFixed(digits)}%`;
 const coordinate = (value, positive, negative) => `${Math.abs(value).toFixed(1)}°${value >= 0 ? positive : negative}`;
 
 // Punto de la imagen (u, v en 0..1) que corresponde a una franja y a una
@@ -222,7 +222,7 @@ export default function AnalyticsJukebox({ anomaly }) {
     else if (kind === 'separate' && pending === 0) guide = { target: 'isolate', step: 1 };
     else guide = { target: 'viewer', step: pending + 1 };
   }
-  const chip = (target) => guide?.target === target && <span className="step-chip">Paso {guide.step}</span>;
+  const chip = (target) => guide?.target === target && <span className="step-chip">Step {guide.step}</span>;
 
   // Teclado de la estación: Espacio sintoniza/pausa; Tab no sale del panel.
   const toggleRef = useRef(toggle);
@@ -364,7 +364,7 @@ export default function AnalyticsJukebox({ anomaly }) {
       o.lead.textContent = `${layers[lead].icon} ${layers[lead].name}`;
       o.mean.textContent = percent(s.v[lead], 1);
       o.peak.textContent = percent(s.peak[lead]);
-      o.peakAt.textContent = radial ? `a ${percent(s.peakPos[lead])} del radio` : `a ${percent(s.peakPos[lead])} de altura`;
+      o.peakAt.textContent = radial ? `at ${percent(s.peakPos[lead])} of the radius` : `at ${percent(s.peakPos[lead])} height`;
       o.entropy.textContent = `${s.entropy.toFixed(2)} bits`;
       o.contrast.textContent = percent(s.sd, 1);
       o.whole.textContent = layers.map((layer, k) => `${layer.icon} ${percent(analysis.coverage[k], 1)}`).join(' · ');
@@ -423,10 +423,10 @@ export default function AnalyticsJukebox({ anomaly }) {
   const aspect = source ? source.width / source.height : 16 / 9;
   const caption =
     source?.origin === 'video'
-      ? `Vídeo: NASA's Scientific Visualization Studio · SVS #${anomaly.svsId}${config.gain ? ' · brillo de pantalla aumentado' : ''}`
+      ? `Video: NASA's Scientific Visualization Studio · SVS #${anomaly.svsId}${config.gain ? ' · screen brightness boosted' : ''}`
       : source?.origin === 'procedural'
-        ? 'Reconstrucción procedural con la paleta del dataset (no se pudo cargar el recurso del SVS)'
-        : `Imagen fija: NASA's Scientific Visualization Studio · SVS #${anomaly.svsId}`;
+        ? 'Procedural reconstruction with the dataset palette (the SVS resource could not be loaded)'
+        : `Still image: NASA's Scientific Visualization Studio · SVS #${anomaly.svsId}`;
 
   return (
     <div className="station-backdrop" onPointerDown={(e) => e.target === e.currentTarget && closePanel()}>
@@ -444,7 +444,7 @@ export default function AnalyticsJukebox({ anomaly }) {
             <h2 id="station-title">
               {anomaly.title}
               {completed && (
-                <span className="station-star" title="Misión completada">
+                <span className="station-star" title="Mission complete">
                   {' '}
                   ★
                 </span>
@@ -456,9 +456,9 @@ export default function AnalyticsJukebox({ anomaly }) {
           </div>
           <div className="station-actions">
             <button type="button" className="btn" aria-pressed={reading} onClick={() => setReading(!reading)}>
-              Modo lectura
+              Reading mode
             </button>
-            <button ref={close} type="button" className="btn btn-icon" onClick={closePanel} aria-label="Cerrar estación de análisis">
+            <button ref={close} type="button" className="btn btn-icon" onClick={closePanel} aria-label="Close analysis station">
               ✕
             </button>
           </div>
@@ -467,36 +467,36 @@ export default function AnalyticsJukebox({ anomaly }) {
         <p className="station-summary">{anomaly.summary}</p>
 
         {reading && (
-          <section className="reading" aria-label="Lectura accesible">
+          <section className="reading" aria-label="Accessible reading">
             <div>
-              <h3>Lo que se ve</h3>
+              <h3>What you see</h3>
               <p>{config.see}</p>
             </div>
             <div>
-              <h3>Lo que se escucha</h3>
+              <h3>What you hear</h3>
               <p>
-                {radial ? 'Una aguja gira desde el centro de la imagen' : 'Una línea vertical recorre la imagen de izquierda a derecha'} en{' '}
-                {config.sweep.seconds} segundos y vuelve a empezar. Cada fenómeno mueve una pista:{' '}
-                {layers.map((layer) => `${layer.name.toLowerCase()}, ${ROLES[layer.role].toLowerCase()}`).join('; ')}. Las notas suben de tono
-                cuanto más {radial ? 'lejos del centro' : 'arriba'} está el fenómeno, y un bombo marca el pulso allí donde la imagen está más
-                cargada.
+                {radial ? 'A needle rotates from the center of the image' : 'A vertical line sweeps the image from left to right'} in{' '}
+                {config.sweep.seconds} seconds and starts over. Each phenomenon drives a track:{' '}
+                {layers.map((layer) => `${layer.name.toLowerCase()}, ${ROLES[layer.role].toLowerCase()}`).join('; ')}. Notes rise in pitch
+                the {radial ? 'farther from the center' : 'higher up'} the phenomenon is, and a kick drum marks the pulse wherever the image is
+                busiest.
               </p>
             </div>
             <div>
-              <h3>Ahora mismo</h3>
+              <h3>Right now</h3>
               <p ref={live} aria-live="polite">
-                {source ? describeStrip(rt.current.analyzer.analysis, Math.min(STEPS - 1, Math.floor(sonifier.progress() * STEPS)), layers) : 'Cargando…'}
+                {source ? describeStrip(rt.current.analyzer.analysis, Math.min(STEPS - 1, Math.floor(sonifier.progress() * STEPS)), layers) : 'Loading…'}
               </p>
             </div>
             {stats && (
               <table>
-                <caption>Los cuatro fenómenos en el fotograma actual</caption>
+                <caption>The four phenomena in the current frame</caption>
                 <thead>
                   <tr>
-                    <th scope="col">Fenómeno</th>
-                    <th scope="col">Ocupa</th>
-                    <th scope="col">Intensidad media</th>
-                    <th scope="col">Máximo en</th>
+                    <th scope="col">Phenomenon</th>
+                    <th scope="col">Covers</th>
+                    <th scope="col">Mean intensity</th>
+                    <th scope="col">Peak at</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -528,7 +528,7 @@ export default function AnalyticsJukebox({ anomaly }) {
                 onPointerCancel={pointer('leave')}
                 onPointerLeave={pointer('leave')}
               />
-              {!source && <p className="viewer-loading">Cargando el vídeo…</p>}
+              {!source && <p className="viewer-loading">Loading the video…</p>}
               <figcaption>
                 {chip('viewer')}
                 {caption}
@@ -537,25 +537,25 @@ export default function AnalyticsJukebox({ anomaly }) {
 
             <div className="transport">
               <button type="button" className="btn btn-tune" aria-pressed={playing} disabled={!source} onClick={toggle}>
-                {playing ? '❚❚ Pausar barrido' : '▶ Sintonizar / sonificar datos'}
+                {playing ? '❚❚ Pause sweep' : '▶ Tune in / sonify data'}
               </button>
               {loops && (
                 <button type="button" className={`btn${guide?.target === 'freeze' ? ' is-guide' : ''}`} aria-pressed={frozen} onClick={freeze}>
-                  {frozen ? '▶ Reanudar vídeo' : '❚❚ Congelar vídeo'}
-                  {stepped && <span className="step-chip">{frozen ? '✓ Paso 1' : 'Paso 1'}</span>}
+                  {frozen ? '▶ Resume video' : '❚❚ Freeze video'}
+                  {stepped && <span className="step-chip">{frozen ? '✓ Step 1' : 'Step 1'}</span>}
                 </button>
               )}
-              {!audio && <span className="station-note">Este navegador no tiene audio: el barrido sigue en modo visual.</span>}
+              {!audio && <span className="station-note">This browser has no audio: the sweep continues in visual mode.</span>}
             </div>
 
-            <div className={`isolate${guide?.target === 'isolate' ? ' is-guide' : ''}`} role="group" aria-label="Aislar fenómeno">
+            <div className={`isolate${guide?.target === 'isolate' ? ' is-guide' : ''}`} role="group" aria-label="Isolate phenomenon">
               <h3>
-                Aislar fenómeno
+                Isolate phenomenon
                 {chip('isolate')}
               </h3>
               <div>
                 <button type="button" className="btn" aria-pressed={isolated < 0} onClick={() => setIsolated(-1)}>
-                  Todo
+                  All
                 </button>
                 {layers.map((layer, k) => (
                   <button key={layer.name} type="button" className="btn" aria-pressed={isolated === k} onClick={() => setIsolated(isolated === k ? -1 : k)}>
@@ -566,7 +566,7 @@ export default function AnalyticsJukebox({ anomaly }) {
               <p className="station-note">
                 {focus >= 0
                   ? `${layers[focus].icon} ${layers[focus].line}`
-                  : 'Elige un fenómeno para dejar brillando solo sus píxeles; el resto del vídeo se atenúa.'}
+                  : 'Pick a phenomenon to leave only its pixels glowing; the rest of the video dims.'}
               </p>
             </div>
 
@@ -588,20 +588,20 @@ export default function AnalyticsJukebox({ anomaly }) {
 
 
 
-            <section className="context" aria-label="Contexto de la señal">
-              <h3>Contexto de la señal</h3>
+            <section className="context" aria-label="Signal context">
+              <h3>Signal context</h3>
               <p>{anomaly.context}</p>
               <p className="station-id">
-                {anomaly.place} · {coordinate(anomaly.lat, 'N', 'S')}, {coordinate(anomaly.lon, 'E', 'O')}
+                {anomaly.place} · {coordinate(anomaly.lat, 'N', 'S')}, {coordinate(anomaly.lon, 'E', 'W')}
               </p>
             </section>
 
             <button type="button" className="btn telemetry-toggle" aria-expanded={advanced} aria-controls="telemetry" onClick={() => setAdvanced(!advanced)}>
-              {advanced ? 'Ocultar telemetría avanzada ▴' : 'Ver telemetría avanzada ▾'}
+              {advanced ? 'Hide advanced telemetry ▴' : 'Show advanced telemetry ▾'}
             </button>
 
             <a className="btn station-link" href={anomaly.url} target="_blank" rel="noreferrer">
-              Ver la visualización en svs.gsfc.nasa.gov/{anomaly.svsId} ↗
+              See the visualization at svs.gsfc.nasa.gov/{anomaly.svsId} ↗
             </a>
           </div>
         </div>
@@ -613,36 +613,36 @@ export default function AnalyticsJukebox({ anomaly }) {
           <div className="station-col">
             <Mixer layers={layers} mix={mix} onChange={setTrack} meterRef={(i, el) => (meters.current[i] = el)} />
 
-            <section className="metrics" aria-label="Métricas de la franja actual">
+            <section className="metrics" aria-label="Metrics of the current strip">
               <h3>
-                Franja actual <span ref={(el) => (out.current.position = el)}>—</span>
+                Current strip <span ref={(el) => (out.current.position = el)}>—</span>
               </h3>
               <p className="metrics-lead">
-                Domina: <b ref={(el) => (out.current.lead = el)}>—</b>
+                Dominant: <b ref={(el) => (out.current.lead = el)}>—</b>
               </p>
               <dl>
                 <div>
-                  <dt>Valor medio</dt>
+                  <dt>Mean value</dt>
                   <dd ref={(el) => (out.current.mean = el)}>—</dd>
                 </div>
                 <div>
-                  <dt>Pico de anomalía</dt>
+                  <dt>Anomaly peak</dt>
                   <dd ref={(el) => (out.current.peak = el)}>—</dd>
                   <small ref={(el) => (out.current.peakAt = el)}>—</small>
                 </div>
                 <div>
-                  <dt>Entropía</dt>
+                  <dt>Entropy</dt>
                   <dd ref={(el) => (out.current.entropy = el)}>—</dd>
-                  <small>de 5 bits posibles</small>
+                  <small>of 5 possible bits</small>
                 </div>
                 <div>
-                  <dt>Contraste</dt>
+                  <dt>Contrast</dt>
                   <dd ref={(el) => (out.current.contrast = el)}>—</dd>
-                  <small>σ de luminosidad</small>
+                  <small>σ of luminosity</small>
                 </div>
               </dl>
               <p>
-                Fotograma completo: <span ref={(el) => (out.current.whole = el)}>—</span>
+                Whole frame: <span ref={(el) => (out.current.whole = el)}>—</span>
               </p>
             </section>
           </div>
