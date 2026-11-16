@@ -417,6 +417,7 @@ const SELF_CSS = `
   .cinema-fox-ring { inset: -4px; border-width: 2px; }
   .cinema-fox-spin360 { width: 34px !important; height: 34px !important; }
   .cinema-loading-line { font-size: 0.62rem; }
+  .cinema-video-el { height: min(34vh, 300px) !important; } /* deja sitio al aviso de audífonos */
   .cinema-controls-row { gap: 8px; }
   .cinema-btn { padding: 0 10px !important; font-size: 0.72rem !important; }
 }
@@ -674,6 +675,29 @@ export default function BootScreen({ leaving }) {
               </button>
             )}
           </div>
+
+          {/* Aviso de audífonos, bajo los controles del tutorial */}
+          <p
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              margin: '8px 0 0',
+              fontSize: '0.74rem',
+              letterSpacing: '0.1em',
+              color: '#9fb2ce',
+              fontFamily: 'var(--font-data, monospace)',
+            }}
+          >
+            <img
+              src={`${base}audifonos.png`}
+              alt=""
+              aria-hidden="true"
+              style={{ width: '18px', height: '18px', objectFit: 'contain' }}
+            />
+            <span>Se recomienda usar audífonos y activar el sonido arriba a la derecha para la experiencia completa</span>
+          </p>
         </div>
       )}
 
@@ -693,25 +717,3 @@ export default function BootScreen({ leaving }) {
     </div>
   );
 }
-
-<p
-  style={{
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',
-    margin: '8px 0 0',
-    fontSize: '0.74rem',
-    letterSpacing: '0.1em',
-    color: '#9fb2ce',
-    fontFamily: 'var(--font-data, monospace)',
-  }}
->
-  <img
-    src={`${base}audifonos.png`}
-    alt=""
-    aria-hidden="true"
-    style={{ width: '18px', height: '18px', objectFit: 'contain' }}
-  />
-  <span>Se recomienda usar audífonos y activar el sonido arriba a la derecha para la experiencia completa</span>
-</p>
