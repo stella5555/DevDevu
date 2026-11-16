@@ -31,7 +31,8 @@ Upon capturing a signal, an interface for in-depth scientific analysis is displa
 
 
 ### Discoverings musseum (Earth red)
-As discoveries are gathered, a 3D causal network is unlocked. Players uncover how urban expansion (Night lights) impacts emissiones (C02) and alters heat transports (Currents) It culminates in a **Planetary symphony**, where all the signals act as instruments within  single, harmonious musical progression
+As discoveries are gathered, a 3D causal network is unlocked. Players uncover how urban expansion (Night lights) impacts emissions (C02) and alters heat transports (currents). It culminates in a planetary symphony, where all the signals act as instruments within single, harmonious musical progression.
+
 ---
 
 ## 🛰️ Use of NASA Data (Scientific Visualization Studio)
